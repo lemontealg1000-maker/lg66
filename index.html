@@ -3,26 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Sheet 数据查找系统</title>
+  <title>Google Sheet 智能数据查询与管理系统</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 1100px; margin: 0 auto; }
-    .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    h2 { margin-top: 0; color: #2c3e50; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-    .form-group { margin-bottom: 15px; }
-    label { font-weight: bold; font-size: 14px; }
-    input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px; }
-    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-    button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    button:hover { background-color: #0056b3; }
-    button.secondary { background-color: #6c757d; }
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #e0e7ff;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 15px; }
+
+    .container { width: 100%; max-width: 1100px; }
+    
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: 24px; transition: all 0.3s ease; }
+    .card:hover { box-shadow: var(--shadow-lg); }
+
+    .nav-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 18px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: var(--text-main); }
+    .brand i { color: var(--primary); font-size: 24px; }
+    
+    .user-profile { display: flex; align-items: center; gap: 12px; }
+    .badge-role { background-color: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    .input-wrapper i { position: absolute; left: 14px; color: var(--text-muted); font-size: 16px; }
+    .input-wrapper input { width: 100%; padding: 12px 14px 12px 42px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 15px; transition: all 0.2s; outline: none; background: #fafafa; }
+    .input-wrapper input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary { background-color: #f1f5f9; color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background-color: #e2e8f0; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+
+    .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 2px; }
+    .tab-btn { padding: 10px 20px; background: none; border: none; font-size: 15px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .table-container { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); }
+    table { width: 100%; border-collapse: collapse; text-align: left; background: #fff; font-size: 14px; }
+    th { background-color: #f1f5f9; color: var(--text-muted); font-weight: 600; padding: 14px; border-bottom: 1px solid var(--border-color); }
+    td { padding: 14px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
+    tbody tr:hover { background-color: #f8fafc; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .status-approved { background-color: #d1fae5; color: #065f46; }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+
     .hidden { display: none !important; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #e9ecef; padding: 12px; text-align: left; }
-    th { background-color: #f8f9fa; color: #495057; }
-    .msg { margin-top: 10px; font-weight: bold; }
+    .msg { margin-top: 14px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    
+    .auth-box { max-width: 440px; margin: 40px auto 0 auto; text-align: center; }
+    .auth-box h2 { font-size: 22px; margin-bottom: 8px; font-weight: 700; }
+    .auth-box p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 999; }
+    .modal-card { background: #fff; width: 100%; max-width: 480px; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-lg); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .close-btn { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+    .select-input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; outline: none; background: #fafafa; }
   </style>
 </head>
 <body>
@@ -30,84 +86,178 @@
 <div class="container">
 
   <!-- 1. 登录模块 -->
-  <div id="auth-card" class="card">
-    <h2>用户登录</h2>
+  <div id="auth-card" class="card auth-box">
+    <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-database"></i></div>
+    <h2>资料查询与管理系统</h2>
+    <p>请输入您的账号与密码以登录系统</p>
+
     <div class="form-group">
-      <label>用户名</label>
-      <input type="text" id="auth-username" placeholder="请输入用户名">
+      <div class="input-wrapper">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" id="auth-username" placeholder="用户名">
+      </div>
     </div>
     <div class="form-group">
-      <label>密码</label>
-      <input type="password" id="auth-password" placeholder="请输入密码">
+      <div class="input-wrapper">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" id="auth-password" placeholder="密码">
+      </div>
     </div>
-    <div class="btn-group">
-      <button onclick="handleLogin()">登录</button>
-    </div>
+    <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">
+      <i class="fa-solid fa-right-to-bracket"></i> 登录账号
+    </button>
     <div id="auth-msg" class="msg"></div>
   </div>
 
-  <!-- 2. 跨工作表搜索模块 (显示 A 到 F 列) -->
-  <div id="search-card" class="card hidden">
-    <div class="header-bar">
-      <h2>工作簿资料查找 (A - F 列)</h2>
-      <div>
-        <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
-        <button class="secondary" onclick="handleLogout()">退出登录</button>
+  <!-- 2. 主页内容 -->
+  <div id="main-app" class="hidden">
+    
+    <div class="card nav-header">
+      <div class="brand">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>数据检索平台</span>
+      </div>
+      <div class="user-profile">
+        <span class="badge-role" id="user-display"><i class="fa-solid fa-user-check"></i> 用户</span>
+        <button class="btn btn-secondary btn-sm" onclick="handleLogout()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> 退出
+        </button>
       </div>
     </div>
-    
-    <div class="form-group" style="display: flex; gap: 10px; margin-top: 15px;">
-      <input type="text" id="search-input" placeholder="请输入 A 列的号码 (例如: 1234)">
-      <button onclick="handleSearch()">搜索</button>
+
+    <!-- 选项卡导航 -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">
+        <i class="fa-solid fa-magnifying-glass"></i> 资料查询
+      </button>
+      <button class="tab-btn hidden" id="tab-admin-btn" onclick="switchTab('admin')">
+        <i class="fa-solid fa-users-gear"></i> 用户管理中心
+      </button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>来源工作表</th>
-          <th>A列 (号码)</th>
-          <th>B列</th>
-          <th>C列</th>
-          <th>D列</th>
-          <th>E列</th>
-          <th>F列</th>
-        </tr>
-      </thead>
-      <tbody id="search-results">
-        <tr><td colspan="7" style="text-align: center; color: #777;">请输入号码开始搜索</td></tr>
-      </tbody>
-    </table>
+    <!-- TAB 1: 跨表资料搜索 -->
+    <div id="tab-search" class="card">
+      <div class="form-group" style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <div class="input-wrapper" style="flex: 1;">
+          <i class="fa-solid fa-hashtag"></i>
+          <input type="text" id="search-input" placeholder="输入 A 列号码或关键词（支持自动从小到大排序）">
+        </div>
+        <button class="btn btn-primary" onclick="handleSearch()">
+          <i class="fa-solid fa-magnifying-glass"></i> 立即搜索
+        </button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><i class="fa-solid fa-folder"></i> 来源工作表</th>
+              <th><i class="fa-solid fa-arrow-down-1-9"></i> A列 (号码)</th>
+              <th>B列</th>
+              <th>C列</th>
+              <th>D列</th>
+              <th>E列</th>
+              <th>F列</th>
+            </tr>
+          </thead>
+          <tbody id="search-results">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">请输入号码开始搜索数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: 管理员用户控制台 -->
+    <div id="tab-admin" class="card hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3><i class="fa-solid fa-user-shield"></i> 用户账号与权限管理</h3>
+        <button class="btn btn-secondary btn-sm" onclick="loadUsers()">
+          <i class="fa-solid fa-rotate"></i> 刷新用户列表
+        </button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><i class="fa-solid fa-user"></i> 用户名</th>
+              <th><i class="fa-solid fa-key"></i> 密码</th>
+              <th><i class="fa-solid fa-shield-halved"></i> 权限角色</th>
+              <th><i class="fa-solid fa-list-check"></i> 状态</th>
+              <th><i class="fa-solid fa-sliders"></i> 操作</th>
+            </tr>
+          </thead>
+          <tbody id="admin-user-list">
+            <tr><td colspan="5" style="text-align: center; padding: 20px;">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
 </div>
 
-<script>
-  // 主数据表格 ID (你的 Google Sheet)
-  const DATA_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY";
+<!-- 管理员编辑用户 Modal 弹窗 -->
+<div id="edit-user-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>编辑用户信息</h3>
+      <button class="close-btn" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="edit-username" class="select-input" disabled>
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="text" id="edit-password" class="select-input" placeholder="输入新密码">
+    </div>
+    <div class="form-group">
+      <label>角色权限</label>
+      <select id="edit-role" class="select-input">
+        <option value="user">普通用户 (user)</option>
+        <option value="admin">管理员 (admin)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>账号状态</label>
+      <select id="edit-status" class="select-input">
+        <option value="approved">通过/已启用 (approved)</option>
+        <option value="pending">待审核/停用 (pending)</option>
+      </select>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+      <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveUserEdit()">保存修改</button>
+    </div>
+  </div>
+</div>
 
-  // ⚠️ 请在这里将数组里的名字替换为你的 5 个工作表底部 Tab 的真实名称！
+<script>
+  const DATA_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY";
   const SHEET_NAMES = ["affin", "cimb", "rhb", "mbb", "Sheet5"];
 
-  // 账号表格 ID 与存放账号的 Tab 名字
   const USERS_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY"; 
   const USERS_TAB_NAME = "Users";
 
   let currentUser = null;
+  let allUsersData = [];
+  let editingUserIndex = null;
 
-  // 登录验证逻辑
   async function handleLogin() {
     const username = document.getElementById("auth-username").value.trim();
     const password = document.getElementById("auth-password").value.trim();
     const msgDiv = document.getElementById("auth-msg");
 
     if (!username || !password) {
-      msgDiv.style.color = "red";
-      msgDiv.innerText = "请输入用户名和密码";
+      msgDiv.style.color = "var(--danger)";
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 请输入用户名和密码`;
       return;
     }
 
-    msgDiv.style.color = "blue";
-    msgDiv.innerText = "正在验证账号...";
+    msgDiv.style.color = "var(--primary)";
+    msgDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 正在验证身份...`;
 
     try {
       const url = `https://docs.google.com/spreadsheets/d/${USERS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(USERS_TAB_NAME)}`;
@@ -118,58 +268,78 @@
       const rows = json.table.rows || [];
 
       let matchUser = null;
-      for (let row of rows) {
-        if (!row.c) continue;
-        const u = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : ""; // A列: Username
-        const p = row.c[1] && row.c[1].v !== null ? String(row.c[1].v) : ""; // B列: Password
-        const r = row.c[2] && row.c[2].v !== null ? String(row.c[2].v) : ""; // C列: Role
-        const s = row.c[3] && row.c[3].v !== null ? String(row.c[3].v) : ""; // D列: Status
+      allUsersData = [];
+
+      rows.forEach((row, index) => {
+        if (!row.c) return;
+        const u = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
+        const p = row.c[1] && row.c[1].v !== null ? String(row.c[1].v) : "";
+        const r = row.c[2] && row.c[2].v !== null ? String(row.c[2].v) : "";
+        const s = row.c[3] && row.c[3].v !== null ? String(row.c[3].v) : "";
+
+        if (u) {
+          allUsersData.push({ index: index + 1, username: u, password: p, role: r, status: s });
+        }
 
         if (u === username && p === password) {
           matchUser = { username: u, role: r, status: s };
-          break;
         }
-      }
+      });
 
       if (!matchUser) {
-        msgDiv.style.color = "red";
-        msgDiv.innerText = "账号或密码错误";
+        msgDiv.style.color = "var(--danger)";
+        msgDiv.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 账号或密码错误`;
       } else if (matchUser.status !== "approved") {
-        msgDiv.style.color = "orange";
-        msgDiv.innerText = "账号尚未批准（需 Admin 在 Users 工作表中将 Status 改为 approved）";
+        msgDiv.style.color = "var(--warning)";
+        msgDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 账号正在等待管理员审核批准`;
       } else {
         currentUser = matchUser;
         document.getElementById("auth-card").classList.add("hidden");
-        document.getElementById("search-card").classList.remove("hidden");
-        document.getElementById("user-display").innerText = `当前用户: ${currentUser.username}`;
+        document.getElementById("main-app").classList.remove("hidden");
+        document.getElementById("user-display").innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentUser.username} (${currentUser.role})`;
+
+        if (currentUser.role === "admin") {
+          document.getElementById("tab-admin-btn").classList.remove("hidden");
+        }
       }
     } catch (err) {
-      msgDiv.style.color = "red";
-      msgDiv.innerText = "读取用户表格失败，请确认表格已开启共享查看权限，且存在名叫 Users 的工作表。";
+      msgDiv.style.color = "var(--danger)";
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 无法获取用户数据，请检查网络或表格权限`;
     }
   }
 
-  // 退出登录
+  function switchTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+    if (tab === 'search') {
+      document.getElementById("tab-search-btn").classList.add("active");
+      document.getElementById("tab-search").classList.remove("hidden");
+      document.getElementById("tab-admin").classList.add("hidden");
+    } else {
+      document.getElementById("tab-admin-btn").classList.add("active");
+      document.getElementById("tab-admin").classList.remove("hidden");
+      document.getElementById("tab-search").classList.add("hidden");
+      renderUsersList();
+    }
+  }
+
   function handleLogout() {
     currentUser = null;
     location.reload();
   }
 
-  // 跨工作表搜索 A 列（获取 A 到 F 列）
   async function handleSearch() {
     const keyword = document.getElementById("search-input").value.trim();
     const tbody = document.getElementById("search-results");
 
     if (!keyword) {
-      alert("请输入要查找的号码！");
+      alert("请输入要查找的号码或关键词！");
       return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">正在跨工作表检索中...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在检索并排序数据...</td></tr>`;
 
     let results = [];
 
-    // 并行读取所有工作表的数据
     const fetchPromises = SHEET_NAMES.map(async (sheetName) => {
       try {
         const url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
@@ -182,16 +352,17 @@
           if (!row.c) return;
           const colA = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
           
-          // 模糊匹配 + 消除两侧空格，解决搜索不到的问题
           if (colA.trim().includes(keyword)) {
+            const numValue = parseFloat(colA.replace(/[^0-9.-]/g, ''));
             results.push({
               sheetName: sheetName,
               colA: colA,
+              numSort: isNaN(numValue) ? Number.MAX_VALUE : numValue,
               colB: row.c[1] && row.c[1].v !== null ? row.c[1].v : "",
               colC: row.c[2] && row.c[2].v !== null ? row.c[2].v : "",
               colD: row.c[3] && row.c[3].v !== null ? row.c[3].v : "",
-              colE: row.c[4] && row.c[4].v !== null ? row.c[4].v : "", // E列
-              colF: row.c[5] && row.c[5].v !== null ? row.c[5].v : ""  // F列
+              colE: row.c[4] && row.c[4].v !== null ? row.c[4].v : "",
+              colF: row.c[5] && row.c[5].v !== null ? row.c[5].v : ""
             });
           }
         });
@@ -202,12 +373,14 @@
 
     await Promise.all(fetchPromises);
 
-    // 渲染结果列表 (输出 A 到 F 列)
+    // ★ 按 A 列号码从小到大升序排序 ★
+    results.sort((a, b) => a.numSort - b.numSort);
+
     if (results.length > 0) {
       tbody.innerHTML = results.map(item => `
         <tr>
-          <td><strong style="color: #007bff;">${item.sheetName}</strong></td>
-          <td><b>${item.colA}</b></td>
+          <td><span class="badge-role"><i class="fa-solid fa-table"></i> ${item.sheetName}</span></td>
+          <td><b style="color: var(--primary); font-size: 15px;">${item.colA}</b></td>
           <td>${item.colB}</td>
           <td>${item.colC}</td>
           <td>${item.colD}</td>
@@ -216,8 +389,71 @@
         </tr>
       `).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">未查找到匹配的号码，请检查工作表名称或号码是否正确。</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;"><i class="fa-solid fa-folder-open"></i> 未找到匹配的号码或资料</td></tr>`;
     }
+  }
+
+  function renderUsersList() {
+    const tbody = document.getElementById("admin-user-list");
+    if (allUsersData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px;">暂无用户数据</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = allUsersData.map((u, i) => `
+      <tr>
+        <td><b>${u.username}</b></td>
+        <td><code>${u.password}</code></td>
+        <td><span class="badge-role">${u.role}</span></td>
+        <td>
+          <span class="status-badge ${u.status === 'approved' ? 'status-approved' : 'status-pending'}">
+            <i class="fa-solid ${u.status === 'approved' ? 'fa-circle-check' : 'fa-clock'}"></i>
+            ${u.status === 'approved' ? '已批准' : '待审核'}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="openEditModal(${i})">
+            <i class="fa-solid fa-pen-to-square"></i> 编辑
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function loadUsers() {
+    handleLogin();
+    setTimeout(renderUsersList, 500);
+  }
+
+  function openEditModal(index) {
+    editingUserIndex = index;
+    const user = allUsersData[index];
+    document.getElementById("edit-username").value = user.username;
+    document.getElementById("edit-password").value = user.password;
+    document.getElementById("edit-role").value = user.role || "user";
+    document.getElementById("edit-status").value = user.status || "pending";
+    document.getElementById("edit-user-modal").classList.remove("hidden");
+  }
+
+  function closeEditModal() {
+    document.getElementById("edit-user-modal").classList.add("hidden");
+  }
+
+  function saveUserEdit() {
+    if (editingUserIndex === null) return;
+    
+    const newPassword = document.getElementById("edit-password").value.trim();
+    const newRole = document.getElementById("edit-role").value;
+    const newStatus = document.getElementById("edit-status").value;
+
+    allUsersData[editingUserIndex].password = newPassword;
+    allUsersData[editingUserIndex].role = newRole;
+    allUsersData[editingUserIndex].status = newStatus;
+
+    renderUsersList();
+    closeEditModal();
+
+    alert(`【设置已更新】\n用户名: ${allUsersData[editingUserIndex].username}\n新状态: ${newStatus}\n新权限: ${newRole}`);
   }
 </script>
 
