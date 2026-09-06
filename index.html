@@ -84,7 +84,7 @@
 
 <div class="container">
 
-  <!-- 1. 登录卡片 -->
+  <!-- 1. 登录界面 -->
   <div id="auth-card" class="card auth-box">
     <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-database"></i></div>
     <h2>资料查询与管理系统</h2>
@@ -114,11 +114,11 @@
     <div id="auth-msg" class="msg"></div>
   </div>
 
-  <!-- 2. 注册卡片 -->
+  <!-- 2. 注册界面 -->
   <div id="register-card" class="card auth-box hidden">
     <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-user-plus"></i></div>
     <h2>注册新账号</h2>
-    <p>提交注册后需等待管理员审核批准</p>
+    <p>注册后提交，管理员可在【用户管理中心】一键批准</p>
 
     <div class="form-group">
       <div class="input-wrapper">
@@ -133,7 +133,7 @@
       </div>
     </div>
     <button class="btn btn-primary" style="width: 100%;" onclick="handleRegister()">
-      <i class="fa-solid fa-check-circle"></i> 提交注册申请
+      <i class="fa-solid fa-check-circle"></i> 提交注册
     </button>
     
     <div style="margin-top: 18px;">
@@ -144,7 +144,7 @@
     <div id="reg-msg" class="msg"></div>
   </div>
 
-  <!-- 3. 主界面 (登录后显示) -->
+  <!-- 3. 系统主界面 -->
   <div id="main-app" class="hidden">
     
     <div class="card nav-header">
@@ -169,12 +169,12 @@
       </button>
     </div>
 
-    <!-- TAB 1: 跨表资料搜索 -->
+    <!-- TAB 1: 搜索界面 -->
     <div id="tab-search" class="card">
       <div class="form-group" style="display: flex; gap: 12px; margin-bottom: 20px;">
         <div class="input-wrapper" style="flex: 1;">
           <i class="fa-solid fa-hashtag"></i>
-          <input type="text" id="search-input" placeholder="输入 A 列号码（支持纯数字、带文字后缀，自动从小到大排序）">
+          <input type="text" id="search-input" placeholder="输入 A 列内容（例如：46 R1、1234 等）" onkeyup="if(event.key==='Enter') handleSearch()">
         </div>
         <button class="btn btn-primary" onclick="handleSearch()">
           <i class="fa-solid fa-magnifying-glass"></i> 立即搜索
@@ -195,17 +195,17 @@
             </tr>
           </thead>
           <tbody id="search-results">
-            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">请输入号码开始搜索数据</td></tr>
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">请输入关键词（如 46 R1）开始搜索</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- TAB 2: 管理员用户控制台 -->
+    <!-- TAB 2: 管理员用户中心 -->
     <div id="tab-admin" class="card hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3><i class="fa-solid fa-user-shield"></i> 用户账号与权限管理</h3>
-        <button class="btn btn-secondary btn-sm" onclick="loadUsers()">
+        <h3><i class="fa-solid fa-user-shield"></i> 用户账号与权限管理控制台</h3>
+        <button class="btn btn-secondary btn-sm" onclick="loadUsersData()">
           <i class="fa-solid fa-rotate"></i> 刷新用户列表
         </button>
       </div>
@@ -232,11 +232,11 @@
 
 </div>
 
-<!-- 编辑用户 Modal -->
+<!-- 编辑用户 模态框 -->
 <div id="edit-user-modal" class="modal-overlay hidden">
   <div class="modal-card">
     <div class="modal-header">
-      <h3>编辑用户信息</h3>
+      <h3>审核/修改用户账号</h3>
       <button class="close-btn" onclick="closeEditModal()">&times;</button>
     </div>
     <div class="form-group">
@@ -245,7 +245,7 @@
     </div>
     <div class="form-group">
       <label>密码</label>
-      <input type="text" id="edit-password" class="select-input" placeholder="输入新密码">
+      <input type="text" id="edit-password" class="select-input">
     </div>
     <div class="form-group">
       <label>角色权限</label>
@@ -257,7 +257,7 @@
     <div class="form-group">
       <label>账号状态</label>
       <select id="edit-status" class="select-input">
-        <option value="approved">通过/已启用 (approved)</option>
+        <option value="approved">已通过/已启用 (approved)</option>
         <option value="pending">待审核/停用 (pending)</option>
       </select>
     </div>
@@ -279,7 +279,6 @@
   let allUsersData = [];
   let editingUserIndex = null;
 
-  // 切换登录/注册卡片
   function toggleAuthView(view) {
     document.getElementById("auth-msg").innerHTML = "";
     document.getElementById("reg-msg").innerHTML = "";
@@ -292,7 +291,44 @@
     }
   }
 
-  // 登录逻辑
+  // 1. 获取并合并用户数据（Google Sheet 原有用户 + 本地新注册用户）
+  async function loadUsersData() {
+    let sheetUsers = [];
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${USERS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(USERS_TAB_NAME)}&t=${new Date().getTime()}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.substring(47, text.length - 2));
+      const rows = json.table.rows || [];
+
+      rows.forEach((row) => {
+        if (!row.c) return;
+        const u = row.c[0] && row.c[0].v !== null ? String(row.c[0].v).trim() : "";
+        const p = row.c[1] && row.c[1].v !== null ? String(row.c[1].v).trim() : "";
+        const r = row.c[2] && row.c[2].v !== null ? String(row.c[2].v).trim() : "user";
+        const s = row.c[3] && row.c[3].v !== null ? String(row.c[3].v).trim() : "pending";
+
+        if (u) {
+          sheetUsers.push({ username: u, password: p, role: r, status: s });
+        }
+      });
+    } catch (e) {
+      console.warn("读取 Google Sheet Users 失败，使用本地缓存");
+    }
+
+    // 获取本地注册的用户数据
+    let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
+
+    // 合并数据：本地数据覆盖/补充 Sheet 数据
+    let combinedMap = new Map();
+    sheetUsers.forEach(u => combinedMap.set(u.username, u));
+    localUsers.forEach(u => combinedMap.set(u.username, u)); // 本地编辑/注册的优先
+
+    allUsersData = Array.from(combinedMap.values());
+    renderUsersList();
+  }
+
+  // 2. 登录处理
   async function handleLogin() {
     const username = document.getElementById("auth-username").value.trim();
     const password = document.getElementById("auth-password").value.trim();
@@ -307,75 +343,59 @@
     msgDiv.style.color = "var(--primary)";
     msgDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 正在验证身份...`;
 
-    try {
-      const url = `https://docs.google.com/spreadsheets/d/${USERS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(USERS_TAB_NAME)}`;
-      const res = await fetch(url);
-      const text = await res.text();
-      
-      const json = JSON.parse(text.substring(47, text.length - 2));
-      const rows = json.table.rows || [];
+    await loadUsersData();
 
-      let matchUser = null;
-      allUsersData = [];
+    const matchUser = allUsersData.find(u => u.username === username && u.password === password);
 
-      rows.forEach((row, index) => {
-        if (!row.c) return;
-        const u = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
-        const p = row.c[1] && row.c[1].v !== null ? String(row.c[1].v) : "";
-        const r = row.c[2] && row.c[2].v !== null ? String(row.c[2].v) : "";
-        const s = row.c[3] && row.c[3].v !== null ? String(row.c[3].v) : "";
-
-        if (u) {
-          allUsersData.push({ username: u, password: p, role: r, status: s });
-        }
-
-        if (u === username && p === password) {
-          matchUser = { username: u, role: r, status: s };
-        }
-      });
-
-      if (!matchUser) {
-        msgDiv.style.color = "var(--danger)";
-        msgDiv.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 账号或密码错误`;
-      } else if (matchUser.status !== "approved") {
-        msgDiv.style.color = "var(--warning)";
-        msgDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> 账号正在等待管理员审核批准`;
-      } else {
-        currentUser = matchUser;
-        document.getElementById("auth-card").classList.add("hidden");
-        document.getElementById("main-app").classList.remove("hidden");
-        document.getElementById("user-display").innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentUser.username} (${currentUser.role})`;
-
-        if (currentUser.role === "admin") {
-          document.getElementById("tab-admin-btn").classList.remove("hidden");
-        }
-      }
-    } catch (err) {
+    if (!matchUser) {
       msgDiv.style.color = "var(--danger)";
-      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 无法获取用户数据，请检查网络`;
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 账号或密码错误`;
+    } else if (matchUser.status !== "approved") {
+      msgDiv.style.color = "var(--warning)";
+      msgDiv.innerHTML = `<i class="fa-solid fa-clock"></i> 账号正在等待管理员审核批准 (pending)`;
+    } else {
+      currentUser = matchUser;
+      document.getElementById("auth-card").classList.add("hidden");
+      document.getElementById("main-app").classList.remove("hidden");
+      document.getElementById("user-display").innerHTML = `<i class="fa-solid fa-user-check"></i> ${currentUser.username} (${currentUser.role})`;
+
+      if (currentUser.role === "admin") {
+        document.getElementById("tab-admin-btn").classList.remove("hidden");
+      }
     }
   }
 
-  // 注册新账号逻辑
-  function handleRegister() {
+  // 3. 直接注册功能（无须 Apps Script）
+  async function handleRegister() {
     const username = document.getElementById("reg-username").value.trim();
     const password = document.getElementById("reg-password").value.trim();
     const msgDiv = document.getElementById("reg-msg");
 
     if (!username || !password) {
       msgDiv.style.color = "var(--danger)";
-      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 请填写完整信息`;
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 请填写完整的用户名和密码`;
       return;
     }
 
-    // 存入本地数组暂存
-    allUsersData.push({ username: username, password: password, role: "user", status: "pending" });
+    await loadUsersData();
+
+    if (allUsersData.some(u => u.username === username)) {
+      msgDiv.style.color = "var(--danger)";
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 该用户名已被注册`;
+      return;
+    }
+
+    // 新新建用户，默认 pending 状态
+    const newUser = { username: username, password: password, role: "user", status: "pending" };
+
+    let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
+    localUsers.push(newUser);
+    localStorage.setItem("app_registered_users", JSON.stringify(localUsers));
 
     msgDiv.style.color = "var(--success)";
-    msgDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> 注册申请提交成功！请等待 Admin 审核后登录。`;
-    
+    msgDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> 注册成功！请联系管理员在【用户管理中心】审核批准。`;
+
     setTimeout(() => {
-      alert(`【注册提醒】\n已生成新账号：${username}\n状态：待审核 (pending)\n请确保已在 Google Sheet 的 Users 表格中追加该账号，并将 Status 改为 approved 方可启用。`);
       toggleAuthView('login');
     }, 1500);
   }
@@ -390,7 +410,7 @@
       document.getElementById("tab-admin-btn").classList.add("active");
       document.getElementById("tab-admin").classList.remove("hidden");
       document.getElementById("tab-search").classList.add("hidden");
-      renderUsersList();
+      loadUsersData();
     }
   }
 
@@ -399,23 +419,27 @@
     location.reload();
   }
 
-  // 增强版搜索功能：支持带后缀文字（如 1234ABC）并按数值从小到大升序
+  // 4. 增强型搜索（支持 "46 R1", "46R1", "46" 等包含与跨空格匹配）
   async function handleSearch() {
-    const keyword = document.getElementById("search-input").value.trim();
+    const rawInput = document.getElementById("search-input").value;
+    const keyword = rawInput.trim().toLowerCase();
     const tbody = document.getElementById("search-results");
 
     if (!keyword) {
-      alert("请输入要查找的号码或关键词！");
+      alert("请输入要查找的内容！");
       return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在检索并排序数据...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在搜索并排序数据...</td></tr>`;
 
     let results = [];
+    
+    // 消除空格后的搜索词，如 "46 r1" -> "46r1"
+    const compactKeyword = keyword.replace(/\s+/g, "");
 
     const fetchPromises = SHEET_NAMES.map(async (sheetName) => {
       try {
-        const url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+        const url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${new Date().getTime()}`;
         const res = await fetch(url);
         const text = await res.text();
         const json = JSON.parse(text.substring(47, text.length - 2));
@@ -424,10 +448,12 @@
         rows.forEach((row) => {
           if (!row.c) return;
           const colA = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
-          
-          // 模糊包含了搜索词（例如单元格是 "1234 (已用)"，搜索 "1234" 也能搜出）
-          if (colA.trim().includes(keyword)) {
-            // 正则提取首个数字字符串进行转换（例如 "1234ABC" -> 1234）
+          const lowerColA = colA.toLowerCase();
+          const compactColA = lowerColA.replace(/\s+/g, "");
+
+          // 核心兼容：原始包含 OR 无空格包含
+          if (lowerColA.includes(keyword) || compactColA.includes(compactKeyword)) {
+            // 提取前面的数字作为排序权重
             const matches = colA.match(/\d+/);
             const numValue = matches ? parseFloat(matches[0]) : Number.MAX_VALUE;
 
@@ -444,13 +470,13 @@
           }
         });
       } catch (err) {
-        console.error(`读取工作表 ${sheetName} 失败:`, err);
+        console.error(`读取 ${sheetName} 失败:`, err);
       }
     });
 
     await Promise.all(fetchPromises);
 
-    // 数值从小到大升序排序（最小的排最上面）
+    // 数字升序排列
     results.sort((a, b) => a.numSort - b.numSort);
 
     if (results.length > 0) {
@@ -466,10 +492,11 @@
         </tr>
       `).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;"><i class="fa-solid fa-folder-open"></i> 未找到匹配的号码或资料</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;"><i class="fa-solid fa-folder-open"></i> 未找到匹配 "${rawInput}" 的记录</td></tr>`;
     }
   }
 
+  // 5. 渲染用户管理列表
   function renderUsersList() {
     const tbody = document.getElementById("admin-user-list");
     if (allUsersData.length === 0) {
@@ -485,21 +512,16 @@
         <td>
           <span class="status-badge ${u.status === 'approved' ? 'status-approved' : 'status-pending'}">
             <i class="fa-solid ${u.status === 'approved' ? 'fa-circle-check' : 'fa-clock'}"></i>
-            ${u.status === 'approved' ? '已批准' : '待审核'}
+            ${u.status === 'approved' ? '已通过 (approved)' : '待审核 (pending)'}
           </span>
         </td>
         <td>
           <button class="btn btn-secondary btn-sm" onclick="openEditModal(${i})">
-            <i class="fa-solid fa-pen-to-square"></i> 编辑
+            <i class="fa-solid fa-pen-to-square"></i> 编辑审核
           </button>
         </td>
       </tr>
     `).join('');
-  }
-
-  function loadUsers() {
-    handleLogin();
-    setTimeout(renderUsersList, 500);
   }
 
   function openEditModal(index) {
@@ -516,9 +538,10 @@
     document.getElementById("edit-user-modal").classList.add("hidden");
   }
 
+  // 6. 保存修改（更新本地存储）
   function saveUserEdit() {
     if (editingUserIndex === null) return;
-    
+
     const newPassword = document.getElementById("edit-password").value.trim();
     const newRole = document.getElementById("edit-role").value;
     const newStatus = document.getElementById("edit-status").value;
@@ -527,10 +550,23 @@
     allUsersData[editingUserIndex].role = newRole;
     allUsersData[editingUserIndex].status = newStatus;
 
+    // 持久化保存到本地
+    let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
+    const targetUser = allUsersData[editingUserIndex];
+    
+    const existIdx = localUsers.findIndex(u => u.username === targetUser.username);
+    if (existIdx >= 0) {
+      localUsers[existIdx] = targetUser;
+    } else {
+      localUsers.push(targetUser);
+    }
+    
+    localStorage.setItem("app_registered_users", JSON.stringify(localUsers));
+
     renderUsersList();
     closeEditModal();
 
-    alert(`【修改已更新】\n用户名: ${allUsersData[editingUserIndex].username}\n状态: ${newStatus}\n角色: ${newRole}`);
+    alert(`【修改成功】用户 [${targetUser.username}] 状态已调整为：${newStatus}，可直接进行登录！`);
   }
 </script>
 
