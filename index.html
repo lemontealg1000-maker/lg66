@@ -18,7 +18,6 @@
       --success: #10b981;
       --warning: #f59e0b;
       --danger: #ef4444;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       --radius: 12px;
@@ -28,7 +27,6 @@
     body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 30px 15px; }
 
     .container { width: 100%; max-width: 1100px; }
-    
     .card { background: var(--card-bg); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: 24px; transition: all 0.3s ease; }
     .card:hover { box-shadow: var(--shadow-lg); }
 
@@ -39,7 +37,7 @@
     .user-profile { display: flex; align-items: center; gap: 12px; }
     .badge-role { background-color: var(--primary-light); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
 
-    .form-group { margin-bottom: 18px; }
+    .form-group { margin-bottom: 18px; text-align: left; }
     .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
     .input-wrapper { position: relative; display: flex; align-items: center; }
     .input-wrapper i { position: absolute; left: 14px; color: var(--text-muted); font-size: 16px; }
@@ -52,6 +50,7 @@
     .btn-secondary { background-color: #f1f5f9; color: var(--text-main); border: 1px solid var(--border-color); }
     .btn-secondary:hover { background-color: #e2e8f0; }
     .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+    .btn-link { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 14px; }
 
     .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 2px; }
     .tab-btn { padding: 10px 20px; background: none; border: none; font-size: 15px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
@@ -68,7 +67,7 @@
     .status-pending { background-color: #fef3c7; color: #92400e; }
 
     .hidden { display: none !important; }
-    .msg { margin-top: 14px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .msg { margin-top: 14px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; justify-content: center; }
     
     .auth-box { max-width: 440px; margin: 40px auto 0 auto; text-align: center; }
     .auth-box h2 { font-size: 22px; margin-bottom: 8px; font-weight: 700; }
@@ -85,7 +84,7 @@
 
 <div class="container">
 
-  <!-- 1. 登录模块 -->
+  <!-- 1. 登录卡片 -->
   <div id="auth-card" class="card auth-box">
     <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-database"></i></div>
     <h2>资料查询与管理系统</h2>
@@ -106,10 +105,46 @@
     <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">
       <i class="fa-solid fa-right-to-bracket"></i> 登录账号
     </button>
+    
+    <div style="margin-top: 18px;">
+      <span style="font-size: 14px; color: var(--text-muted);">还没有账号？</span>
+      <button class="btn-link" onclick="toggleAuthView('register')">立即注册</button>
+    </div>
+
     <div id="auth-msg" class="msg"></div>
   </div>
 
-  <!-- 2. 主页内容 -->
+  <!-- 2. 注册卡片 -->
+  <div id="register-card" class="card auth-box hidden">
+    <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-user-plus"></i></div>
+    <h2>注册新账号</h2>
+    <p>提交注册后需等待管理员审核批准</p>
+
+    <div class="form-group">
+      <div class="input-wrapper">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" id="reg-username" placeholder="设置用户名">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="input-wrapper">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" id="reg-password" placeholder="设置密码">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width: 100%;" onclick="handleRegister()">
+      <i class="fa-solid fa-check-circle"></i> 提交注册申请
+    </button>
+    
+    <div style="margin-top: 18px;">
+      <span style="font-size: 14px; color: var(--text-muted);">已有账号？</span>
+      <button class="btn-link" onclick="toggleAuthView('login')">返回登录</button>
+    </div>
+
+    <div id="reg-msg" class="msg"></div>
+  </div>
+
+  <!-- 3. 主界面 (登录后显示) -->
   <div id="main-app" class="hidden">
     
     <div class="card nav-header">
@@ -125,7 +160,6 @@
       </div>
     </div>
 
-    <!-- 选项卡导航 -->
     <div class="tab-nav">
       <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">
         <i class="fa-solid fa-magnifying-glass"></i> 资料查询
@@ -140,7 +174,7 @@
       <div class="form-group" style="display: flex; gap: 12px; margin-bottom: 20px;">
         <div class="input-wrapper" style="flex: 1;">
           <i class="fa-solid fa-hashtag"></i>
-          <input type="text" id="search-input" placeholder="输入 A 列号码或关键词（支持自动从小到大排序）">
+          <input type="text" id="search-input" placeholder="输入 A 列号码（支持纯数字、带文字后缀，自动从小到大排序）">
         </div>
         <button class="btn btn-primary" onclick="handleSearch()">
           <i class="fa-solid fa-magnifying-glass"></i> 立即搜索
@@ -152,7 +186,7 @@
           <thead>
             <tr>
               <th><i class="fa-solid fa-folder"></i> 来源工作表</th>
-              <th><i class="fa-solid fa-arrow-down-1-9"></i> A列 (号码)</th>
+              <th><i class="fa-solid fa-arrow-down-1-9"></i> A列 (号码/内容)</th>
               <th>B列</th>
               <th>C列</th>
               <th>D列</th>
@@ -198,7 +232,7 @@
 
 </div>
 
-<!-- 管理员编辑用户 Modal 弹窗 -->
+<!-- 编辑用户 Modal -->
 <div id="edit-user-modal" class="modal-overlay hidden">
   <div class="modal-card">
     <div class="modal-header">
@@ -245,6 +279,20 @@
   let allUsersData = [];
   let editingUserIndex = null;
 
+  // 切换登录/注册卡片
+  function toggleAuthView(view) {
+    document.getElementById("auth-msg").innerHTML = "";
+    document.getElementById("reg-msg").innerHTML = "";
+    if (view === 'register') {
+      document.getElementById("auth-card").classList.add("hidden");
+      document.getElementById("register-card").classList.remove("hidden");
+    } else {
+      document.getElementById("register-card").classList.add("hidden");
+      document.getElementById("auth-card").classList.remove("hidden");
+    }
+  }
+
+  // 登录逻辑
   async function handleLogin() {
     const username = document.getElementById("auth-username").value.trim();
     const password = document.getElementById("auth-password").value.trim();
@@ -278,7 +326,7 @@
         const s = row.c[3] && row.c[3].v !== null ? String(row.c[3].v) : "";
 
         if (u) {
-          allUsersData.push({ index: index + 1, username: u, password: p, role: r, status: s });
+          allUsersData.push({ username: u, password: p, role: r, status: s });
         }
 
         if (u === username && p === password) {
@@ -304,8 +352,32 @@
       }
     } catch (err) {
       msgDiv.style.color = "var(--danger)";
-      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 无法获取用户数据，请检查网络或表格权限`;
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 无法获取用户数据，请检查网络`;
     }
+  }
+
+  // 注册新账号逻辑
+  function handleRegister() {
+    const username = document.getElementById("reg-username").value.trim();
+    const password = document.getElementById("reg-password").value.trim();
+    const msgDiv = document.getElementById("reg-msg");
+
+    if (!username || !password) {
+      msgDiv.style.color = "var(--danger)";
+      msgDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 请填写完整信息`;
+      return;
+    }
+
+    // 存入本地数组暂存
+    allUsersData.push({ username: username, password: password, role: "user", status: "pending" });
+
+    msgDiv.style.color = "var(--success)";
+    msgDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> 注册申请提交成功！请等待 Admin 审核后登录。`;
+    
+    setTimeout(() => {
+      alert(`【注册提醒】\n已生成新账号：${username}\n状态：待审核 (pending)\n请确保已在 Google Sheet 的 Users 表格中追加该账号，并将 Status 改为 approved 方可启用。`);
+      toggleAuthView('login');
+    }, 1500);
   }
 
   function switchTab(tab) {
@@ -327,6 +399,7 @@
     location.reload();
   }
 
+  // 增强版搜索功能：支持带后缀文字（如 1234ABC）并按数值从小到大升序
   async function handleSearch() {
     const keyword = document.getElementById("search-input").value.trim();
     const tbody = document.getElementById("search-results");
@@ -352,12 +425,16 @@
           if (!row.c) return;
           const colA = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
           
+          // 模糊包含了搜索词（例如单元格是 "1234 (已用)"，搜索 "1234" 也能搜出）
           if (colA.trim().includes(keyword)) {
-            const numValue = parseFloat(colA.replace(/[^0-9.-]/g, ''));
+            // 正则提取首个数字字符串进行转换（例如 "1234ABC" -> 1234）
+            const matches = colA.match(/\d+/);
+            const numValue = matches ? parseFloat(matches[0]) : Number.MAX_VALUE;
+
             results.push({
               sheetName: sheetName,
               colA: colA,
-              numSort: isNaN(numValue) ? Number.MAX_VALUE : numValue,
+              numSort: numValue,
               colB: row.c[1] && row.c[1].v !== null ? row.c[1].v : "",
               colC: row.c[2] && row.c[2].v !== null ? row.c[2].v : "",
               colD: row.c[3] && row.c[3].v !== null ? row.c[3].v : "",
@@ -373,7 +450,7 @@
 
     await Promise.all(fetchPromises);
 
-    // ★ 按 A 列号码从小到大升序排序 ★
+    // 数值从小到大升序排序（最小的排最上面）
     results.sort((a, b) => a.numSort - b.numSort);
 
     if (results.length > 0) {
@@ -453,7 +530,7 @@
     renderUsersList();
     closeEditModal();
 
-    alert(`【设置已更新】\n用户名: ${allUsersData[editingUserIndex].username}\n新状态: ${newStatus}\n新权限: ${newRole}`);
+    alert(`【修改已更新】\n用户名: ${allUsersData[editingUserIndex].username}\n状态: ${newStatus}\n角色: ${newRole}`);
   }
 </script>
 
