@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
     body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 1100px; margin: 0 auto; }
     .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
     h2 { margin-top: 0; color: #2c3e50; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
     .form-group { margin-bottom: 15px; }
@@ -46,10 +46,10 @@
     <div id="auth-msg" class="msg"></div>
   </div>
 
-  <!-- 2. 跨工作表搜索模块 -->
+  <!-- 2. 跨工作表搜索模块 (显示 A 到 F 列) -->
   <div id="search-card" class="card hidden">
     <div class="header-bar">
-      <h2>工作簿资料查找</h2>
+      <h2>工作簿资料查找 (A - F 列)</h2>
       <div>
         <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
         <button class="secondary" onclick="handleLogout()">退出登录</button>
@@ -69,10 +69,12 @@
           <th>B列</th>
           <th>C列</th>
           <th>D列</th>
+          <th>E列</th>
+          <th>F列</th>
         </tr>
       </thead>
       <tbody id="search-results">
-        <tr><td colspan="5" style="text-align: center; color: #777;">请输入号码开始搜索</td></tr>
+        <tr><td colspan="7" style="text-align: center; color: #777;">请输入号码开始搜索</td></tr>
       </tbody>
     </table>
   </div>
@@ -83,12 +85,12 @@
   // 主数据表格 ID (你的 Google Sheet)
   const DATA_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY";
 
-  // ⚠️ 请在这里将数组里的名字替换为你的 5 个工作表底部 Tab 的真实名字
+  // ⚠️ 请在这里将数组里的名字替换为你的 5 个工作表底部 Tab 的真实名称！
   const SHEET_NAMES = ["affin", "cimb", "rhb", "mbb", "Sheet5"];
 
-  // 账号表格 ID（如果账号密码放在另一个 Sheet，请把下方的 ID 替换成账号 Sheet 的 ID）
+  // 账号表格 ID 与存放账号的 Tab 名字
   const USERS_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY"; 
-  const USERS_TAB_NAME = "Users"; // 账号存放的工作表 Tab 名字
+  const USERS_TAB_NAME = "Users";
 
   let currentUser = null;
 
@@ -113,7 +115,7 @@
       const text = await res.text();
       
       const json = JSON.parse(text.substring(47, text.length - 2));
-      const rows = json.table.rows;
+      const rows = json.table.rows || [];
 
       let matchUser = null;
       for (let row of rows) {
@@ -134,7 +136,7 @@
         msgDiv.innerText = "账号或密码错误";
       } else if (matchUser.status !== "approved") {
         msgDiv.style.color = "orange";
-        msgDiv.innerText = "账号尚未批准（需 Admin 在 Sheet 中将 Status 改为 approved）";
+        msgDiv.innerText = "账号尚未批准（需 Admin 在 Users 工作表中将 Status 改为 approved）";
       } else {
         currentUser = matchUser;
         document.getElementById("auth-card").classList.add("hidden");
@@ -143,7 +145,7 @@
       }
     } catch (err) {
       msgDiv.style.color = "red";
-      msgDiv.innerText = "读取用户表格失败，请确认表格已开启共享查看权限";
+      msgDiv.innerText = "读取用户表格失败，请确认表格已开启共享查看权限，且存在名叫 Users 的工作表。";
     }
   }
 
@@ -153,7 +155,7 @@
     location.reload();
   }
 
-  // 跨 5 个工作表同时搜索 A 列
+  // 跨工作表搜索 A 列（获取 A 到 F 列）
   async function handleSearch() {
     const keyword = document.getElementById("search-input").value.trim();
     const tbody = document.getElementById("search-results");
@@ -163,11 +165,11 @@
       return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">正在跨工作表检索中...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">正在跨工作表检索中...</td></tr>`;
 
     let results = [];
 
-    // 并行读取多个工作表
+    // 并行读取所有工作表的数据
     const fetchPromises = SHEET_NAMES.map(async (sheetName) => {
       try {
         const url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
@@ -180,13 +182,16 @@
           if (!row.c) return;
           const colA = row.c[0] && row.c[0].v !== null ? String(row.c[0].v) : "";
           
-          if (colA.trim() === keyword) {
+          // 模糊匹配 + 消除两侧空格，解决搜索不到的问题
+          if (colA.trim().includes(keyword)) {
             results.push({
               sheetName: sheetName,
               colA: colA,
               colB: row.c[1] && row.c[1].v !== null ? row.c[1].v : "",
               colC: row.c[2] && row.c[2].v !== null ? row.c[2].v : "",
-              colD: row.c[3] && row.c[3].v !== null ? row.c[3].v : ""
+              colD: row.c[3] && row.c[3].v !== null ? row.c[3].v : "",
+              colE: row.c[4] && row.c[4].v !== null ? row.c[4].v : "", // E列
+              colF: row.c[5] && row.c[5].v !== null ? row.c[5].v : ""  // F列
             });
           }
         });
@@ -197,7 +202,7 @@
 
     await Promise.all(fetchPromises);
 
-    // 渲染结果列表
+    // 渲染结果列表 (输出 A 到 F 列)
     if (results.length > 0) {
       tbody.innerHTML = results.map(item => `
         <tr>
@@ -206,10 +211,12 @@
           <td>${item.colB}</td>
           <td>${item.colC}</td>
           <td>${item.colD}</td>
+          <td>${item.colE}</td>
+          <td>${item.colF}</td>
         </tr>
       `).join('');
     } else {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">未查找到匹配的号码</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">未查找到匹配的号码，请检查工作表名称或号码是否正确。</td></tr>`;
     }
   }
 </script>
