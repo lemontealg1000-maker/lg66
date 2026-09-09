@@ -33,20 +33,30 @@
     }
     .auth-box {
       max-width: 400px;
-      margin: 40px auto;
-      padding: 24px;
+      margin: 60px auto;
+      padding: 28px;
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .auth-box h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-align: center;
     }
     .input-group { margin-bottom: 16px; }
     .input-group label { display: block; margin-bottom: 6px; font-weight: 500; }
     .input-group input {
       width: 100%;
-      padding: 10px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 6px;
+      font-size: 15px;
+      outline: none;
     }
+    .input-group input:focus { border-color: var(--primary); }
     .search-box { display: flex; gap: 12px; margin-bottom: 24px; }
     input[type="text"] {
       flex: 1;
@@ -54,7 +64,9 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 16px;
+      outline: none;
     }
+    input[type="text"]:focus { border-color: var(--primary); }
     button {
       padding: 10px 20px;
       background-color: var(--primary);
@@ -63,46 +75,52 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     button:hover { background-color: var(--primary-hover); }
+    button:disabled { background-color: #94a3b8; cursor: not-allowed; }
     .hidden { display: none !important; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { background-color: #f1f5f9; }
+    th { background-color: #f1f5f9; font-weight: 600; }
     .badge-role {
       background: #e0e7ff;
       color: #3730a3;
       padding: 4px 8px;
       border-radius: 4px;
       font-size: 12px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-  <!-- 登录区域 -->
+  <!-- 1. 登录界面 -->
   <div id="login-section" class="auth-box">
     <h2><i class="fa-solid fa-lock"></i> 用户登录</h2>
     <div class="input-group">
-      <label>用户名</label>
-      <input type="text" id="login-username" placeholder="请输入用户名">
+      <label for="login-username">用户名</label>
+      <input type="text" id="login-username" placeholder="请输入用户名" onkeyup="if(event.key==='Enter') handleLogin()">
     </div>
     <div class="input-group">
-      <label>密码</label>
-      <input type="password" id="login-password" placeholder="请输入密码">
+      <label for="login-password">密码</label>
+      <input type="password" id="login-password" placeholder="请输入密码" onkeyup="if(event.key==='Enter') handleLogin()">
     </div>
-    <button style="width: 100%;" onclick="handleLogin()">登录</button>
+    <button id="login-btn" style="width: 100%; margin-top: 8px;" onclick="handleLogin()">登录</button>
   </div>
 
-  <!-- 搜索面板（登录后显示） -->
+  <!-- 2. 搜索界面（默认隐藏，登录成功后显示） -->
   <div id="main-section" class="container hidden">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2><i class="fa-solid fa-database"></i> 银行代码查询系统</h2>
-      <button onclick="handleLogout()" style="background: #64748b;">退出登录</button>
+      <h2 style="margin: 0; color: var(--primary);"><i class="fa-solid fa-database"></i> 银行代码查询系统</h2>
+      <button onclick="handleLogout()" style="background: #64748b;"><i class="fa-solid fa-right-from-bracket"></i> 退出登录</button>
     </div>
 
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="请输入关键词搜索..." onkeyup="if(event.key==='Enter') handleSearch()">
+      <input type="text" id="search-input" placeholder="请输入关键词搜索（例如：46 R1）..." onkeyup="if(event.key==='Enter') handleSearch()">
       <button onclick="handleSearch()"><i class="fa-solid fa-magnifying-glass"></i> 搜索</button>
     </div>
 
@@ -121,7 +139,9 @@
         </thead>
         <tbody id="search-results">
           <tr>
-            <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">请在上方输入关键词并点击搜索</td>
+            <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">
+              <i class="fa-solid fa-circle-info"></i> 请在上方输入关键词并点击搜索
+            </td>
           </tr>
         </tbody>
       </table>
@@ -133,57 +153,63 @@
     const API_SECRET = "lg553";
 
     let currentUser = null;
-    let allUsersData = [];
 
-    window.onload = function() {
-      loadUsersData();
-    };
-
-    // 获取并合并用户数据
-    async function loadUsersData() {
-      let sheetUsers = [];
-      try {
-        const res = await fetch(`${API_BASE}?action=getUsers&secret=${API_SECRET}`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          sheetUsers = data;
-        }
-      } catch (e) {
-        console.warn("获取用户失败，使用本地缓存");
-      }
-
-      let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
-      let combinedMap = new Map();
-      sheetUsers.forEach(u => { if (u && u.username) combinedMap.set(u.username, u); });
-      localUsers.forEach(u => { if (u && u.username) combinedMap.set(u.username, u); });
-
-      allUsersData = Array.from(combinedMap.values());
-    }
-
-    // 处理登录
-    function handleLogin() {
+    // 实时发请求验证登录
+    async function handleLogin() {
       const uVal = document.getElementById("login-username").value.trim();
       const pVal = document.getElementById("login-password").value.trim();
 
-      const user = allUsersData.find(u => u.username === uVal && u.password === pVal);
+      if (!uVal || !pVal) {
+        alert("请输入用户名和密码！");
+        return;
+      }
 
-      if (user) {
-        currentUser = user;
-        document.getElementById("login-section").classList.add("hidden");
-        document.getElementById("main-section").classList.remove("hidden");
-      } else {
+      const loginBtn = document.getElementById("login-btn");
+      loginBtn.innerText = "正在验证...";
+      loginBtn.disabled = true;
+
+      try {
+        // 请求后台获取最新数据
+        const res = await fetch(`${API_BASE}?action=getUsers&secret=${API_SECRET}`);
+        const users = await res.json();
+
+        loginBtn.innerText = "登录";
+        loginBtn.disabled = false;
+
+        if (Array.isArray(users)) {
+          // 统一转字符串进行精准匹配
+          const matchedUser = users.find(u => 
+            String(u.username).trim() === uVal && 
+            String(u.password).trim() === pVal
+          );
+
+          if (matchedUser) {
+            currentUser = matchedUser;
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("main-section").classList.remove("hidden");
+            return;
+          }
+        }
         alert("用户名或密码错误！");
+
+      } catch (err) {
+        console.error("登录失败:", err);
+        loginBtn.innerText = "登录";
+        loginBtn.disabled = false;
+        alert("连接服务器失败，请检查网络或配置！");
       }
     }
 
     // 退出登录
     function handleLogout() {
       currentUser = null;
+      document.getElementById("login-username").value = "";
+      document.getElementById("login-password").value = "";
       document.getElementById("login-section").classList.remove("hidden");
       document.getElementById("main-section").classList.add("hidden");
     }
 
-    // 处理搜索
+    // 执行搜索
     async function handleSearch() {
       const rawInput = document.getElementById("search-input").value;
       const keyword = rawInput.trim();
@@ -194,7 +220,13 @@
         return;
       }
 
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;">正在搜索...</td></tr>`;
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 30px;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>
+            正在搜索数据...
+          </td>
+        </tr>`;
 
       try {
         const res = await fetch(`${API_BASE}?action=search&keyword=${encodeURIComponent(keyword)}&secret=${API_SECRET}`);
@@ -203,8 +235,8 @@
         if (Array.isArray(results) && results.length > 0) {
           tbody.innerHTML = results.map(item => `
             <tr>
-              <td><span class="badge-role">${item.sheetName}</span></td>
-              <td><b>${item.colA}</b></td>
+              <td><span class="badge-role"><i class="fa-solid fa-table"></i> ${item.sheetName}</span></td>
+              <td><b style="color: var(--primary); font-size: 15px;">${item.colA}</b></td>
               <td>${item.colB}</td>
               <td>${item.colC}</td>
               <td>${item.colD}</td>
@@ -213,10 +245,20 @@
             </tr>
           `).join('');
         } else {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">未找到匹配记录</td></tr>`;
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">
+                <i class="fa-solid fa-folder-open"></i> 未找到匹配 "${rawInput}" 的记录
+              </td>
+            </tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">请求失败，请检查配置。</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">
+              请求失败，请检查网络配置。
+            </td>
+          </tr>`;
       }
     }
   </script>
