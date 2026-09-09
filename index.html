@@ -84,7 +84,7 @@
 
 <div class="container">
 
-  <!-- 1. 登录界面 -->
+  <!-- 1. 登录卡片 -->
   <div id="auth-card" class="card auth-box">
     <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-database"></i></div>
     <h2>资料查询与管理系统</h2>
@@ -114,11 +114,11 @@
     <div id="auth-msg" class="msg"></div>
   </div>
 
-  <!-- 2. 注册界面 -->
+  <!-- 2. 注册卡片 -->
   <div id="register-card" class="card auth-box hidden">
     <div style="font-size: 40px; color: var(--primary); margin-bottom: 12px;"><i class="fa-solid fa-user-plus"></i></div>
     <h2>注册新账号</h2>
-    <p>注册后提交，管理员可在【用户管理中心】一键批准</p>
+    <p>注册提交后，管理员可在【用户管理中心】审核启用</p>
 
     <div class="form-group">
       <div class="input-wrapper">
@@ -269,10 +269,14 @@
 </div>
 
 <script>
-  const DATA_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY";
-  const SHEET_NAMES = ["affin", "cimb", "rhb", "mbb", "mbb AH"];
+  // 【隐藏加密】已将原本的 Sheet ID 转换为 Base64 乱码，防止直接查看源码
+  const _0x1a = "MS00bXkyX1NMcXotMVUwY3hqU2l4TjNrb0tzcEdNM0tGd0lyV0ZwLS02WVk="; 
+  
+  // 运行时自动解密
+  const getSheetId = () => atob(_0x1a);
 
-  const USERS_SHEET_ID = "1-4my2_SLqz-1U0cxjSixN3koKspGM3KFwIrWFp--6YY"; 
+  // 您的 5 个 Bank 工作表名称
+  const SHEET_NAMES = ["affin", "cimb", "rhb", "mbb", "mbb AH"];
   const USERS_TAB_NAME = "Users";
 
   let currentUser = null;
@@ -291,11 +295,11 @@
     }
   }
 
-  // 1. 获取并合并用户数据（Google Sheet 原有用户 + 本地新注册用户）
+  // 1. 获取并合并用户数据
   async function loadUsersData() {
     let sheetUsers = [];
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${USERS_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(USERS_TAB_NAME)}&t=${new Date().getTime()}`;
+      const url = `https://docs.google.com/spreadsheets/d/${getSheetId()}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(USERS_TAB_NAME)}&t=${new Date().getTime()}`;
       const res = await fetch(url);
       const text = await res.text();
       const json = JSON.parse(text.substring(47, text.length - 2));
@@ -313,16 +317,13 @@
         }
       });
     } catch (e) {
-      console.warn("读取 Google Sheet Users 失败，使用本地缓存");
+      console.warn("读取 Users 失败，使用本地缓存");
     }
 
-    // 获取本地注册的用户数据
     let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
-
-    // 合并数据：本地数据覆盖/补充 Sheet 数据
     let combinedMap = new Map();
     sheetUsers.forEach(u => combinedMap.set(u.username, u));
-    localUsers.forEach(u => combinedMap.set(u.username, u)); // 本地编辑/注册的优先
+    localUsers.forEach(u => combinedMap.set(u.username, u));
 
     allUsersData = Array.from(combinedMap.values());
     renderUsersList();
@@ -365,7 +366,7 @@
     }
   }
 
-  // 3. 直接注册功能（无须 Apps Script）
+  // 3. 注册新账号
   async function handleRegister() {
     const username = document.getElementById("reg-username").value.trim();
     const password = document.getElementById("reg-password").value.trim();
@@ -385,7 +386,6 @@
       return;
     }
 
-    // 新新建用户，默认 pending 状态
     const newUser = { username: username, password: password, role: "user", status: "pending" };
 
     let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
@@ -393,7 +393,7 @@
     localStorage.setItem("app_registered_users", JSON.stringify(localUsers));
 
     msgDiv.style.color = "var(--success)";
-    msgDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> 注册成功！请联系管理员在【用户管理中心】审核批准。`;
+    msgDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> 注册成功！请联系管理员审核批准。`;
 
     setTimeout(() => {
       toggleAuthView('login');
@@ -419,7 +419,7 @@
     location.reload();
   }
 
-  // 4. 增强型搜索（支持 "46 R1", "46R1", "46" 等包含与跨空格匹配）
+  // 4. 优化版搜索算法（无障碍匹配带空格词汇如 "46 R1"）
   async function handleSearch() {
     const rawInput = document.getElementById("search-input").value;
     const keyword = rawInput.trim().toLowerCase();
@@ -433,13 +433,11 @@
     tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在搜索并排序数据...</td></tr>`;
 
     let results = [];
-    
-    // 消除空格后的搜索词，如 "46 r1" -> "46r1"
     const compactKeyword = keyword.replace(/\s+/g, "");
 
     const fetchPromises = SHEET_NAMES.map(async (sheetName) => {
       try {
-        const url = `https://docs.google.com/spreadsheets/d/${DATA_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${new Date().getTime()}`;
+        const url = `https://docs.google.com/spreadsheets/d/${getSheetId()}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${new Date().getTime()}`;
         const res = await fetch(url);
         const text = await res.text();
         const json = JSON.parse(text.substring(47, text.length - 2));
@@ -451,9 +449,7 @@
           const lowerColA = colA.toLowerCase();
           const compactColA = lowerColA.replace(/\s+/g, "");
 
-          // 核心兼容：原始包含 OR 无空格包含
           if (lowerColA.includes(keyword) || compactColA.includes(compactKeyword)) {
-            // 提取前面的数字作为排序权重
             const matches = colA.match(/\d+/);
             const numValue = matches ? parseFloat(matches[0]) : Number.MAX_VALUE;
 
@@ -475,8 +471,6 @@
     });
 
     await Promise.all(fetchPromises);
-
-    // 数字升序排列
     results.sort((a, b) => a.numSort - b.numSort);
 
     if (results.length > 0) {
@@ -496,7 +490,7 @@
     }
   }
 
-  // 5. 渲染用户管理列表
+  // 5. 渲染管理中心列表
   function renderUsersList() {
     const tbody = document.getElementById("admin-user-list");
     if (allUsersData.length === 0) {
@@ -538,7 +532,7 @@
     document.getElementById("edit-user-modal").classList.add("hidden");
   }
 
-  // 6. 保存修改（更新本地存储）
+  // 6. 保存设置
   function saveUserEdit() {
     if (editingUserIndex === null) return;
 
@@ -550,7 +544,6 @@
     allUsersData[editingUserIndex].role = newRole;
     allUsersData[editingUserIndex].status = newStatus;
 
-    // 持久化保存到本地
     let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
     const targetUser = allUsersData[editingUserIndex];
     
@@ -566,7 +559,7 @@
     renderUsersList();
     closeEditModal();
 
-    alert(`【修改成功】用户 [${targetUser.username}] 状态已调整为：${newStatus}，可直接进行登录！`);
+    alert(`【修改成功】用户 [${targetUser.username}] 状态已调整为：${newStatus}`);
   }
 </script>
 
