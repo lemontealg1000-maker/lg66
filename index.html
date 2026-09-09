@@ -1,65 +1,69 @@
-// 替换为你刚生成的 Apps Script Web App 链接
-  const API_BASE = "https://script.google.com/macros/s/AKfycbxjSxPCeMR2YnjaC2mxoulDwVDBQschzx6orkrKgofuE-mUlYFuIHhnmTz5P2hSeViicA/exec";
-  
-  // 填入在 Apps Script 里设定的秘钥
-  const API_SECRET = "lg553";
+// 1. 设置 API 基础地址与安全秘钥
+const API_BASE = "https://script.google.com/macros/s/AKfycbxjSxPCeMR2YnjaC2mxoulDwVDBQschzx6orkrKgofuE-mUlYFuIHhnmTz5P2hSeViicA/exec";
+const API_SECRET = "lg553";
 
-  let currentUser = null;
-  let allUsersData = [];
-  let editingUserIndex = null;
+let currentUser = null;
+let allUsersData = [];
+let editingUserIndex = null;
 
-  // 1. 获取并合并用户数据
-  async function loadUsersData() {
-    let sheetUsers = [];
-    try {
-      const res = await fetch(`${API_BASE}?action=getUsers&secret=${API_SECRET}`);
-      sheetUsers = await res.json();
-    } catch (e) {
-      console.warn("读取 Users 失败，使用本地缓存");
-    }
+// 2. 获取并合并用户数据
+async function loadUsersData() {
+  let sheetUsers = [];
+  try {
+    const res = await fetch(`${API_BASE}?action=getUsers&secret=${API_SECRET}`);
+    sheetUsers = await res.json();
+  } catch (e) {
+    console.warn("读取 Users 失败，使用本地缓存");
+  }
 
-    let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
-    let combinedMap = new Map();
-    sheetUsers.forEach(u => combinedMap.set(u.username, u));
-    localUsers.forEach(u => combinedMap.set(u.username, u));
+  let localUsers = JSON.parse(localStorage.getItem("app_registered_users") || "[]");
+  let combinedMap = new Map();
+  sheetUsers.forEach(u => combinedMap.set(u.username, u));
+  localUsers.forEach(u => combinedMap.set(u.username, u));
 
-    allUsersData = Array.from(combinedMap.values());
+  allUsersData = Array.from(combinedMap.values());
+  if (typeof renderUsersList === 'function') {
     renderUsersList();
   }
+}
 
-  // 4. 搜索数据
-  async function handleSearch() {
-    const rawInput = document.getElementById("search-input").value;
-    const keyword = rawInput.trim();
-    const tbody = document.getElementById("search-results");
+// 3. 搜索数据处理函数
+async function handleSearch() {
+  const rawInput = document.getElementById("search-input").value;
+  const keyword = rawInput.trim();
+  const tbody = document.getElementById("search-results");
 
-    if (!keyword) {
-      alert("请输入要查找的内容！");
-      return;
-    }
-
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在搜索并排序数据...</td></tr>`;
-
-    try {
-      const res = await fetch(`${API_BASE}?action=search&keyword=${encodeURIComponent(keyword)}&secret=${API_SECRET}`);
-      const results = await res.json();
-
-      if (results.length > 0) {
-        tbody.innerHTML = results.map(item => `
-          <tr>
-            <td><span class="badge-role"><i class="fa-solid fa-table"></i> ${item.sheetName}</span></td>
-            <td><b style="color: var(--primary); font-size: 15px;">${item.colA}</b></td>
-            <td>${item.colB}</td>
-            <td>${item.colC}</td>
-            <td>${item.colD}</td>
-            <td>${item.colE}</td>
-            <td>${item.colF}</td>
-          </tr>
-        `).join('');
-      } else {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;"><i class="fa-solid fa-folder-open"></i> 未找到匹配 "${rawInput}" 的记录</td></tr>`;
-      }
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">请求失败，请检查设置。</td></tr>`;
-    }
+  if (!keyword) {
+    alert("请输入要查找的内容！");
+    return;
   }
+
+  // 修复：添加标准的 <tr><td colspan="7"> 包装加载提示，确保表格不变形
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>正在搜索并排序数据...</td></tr>`;
+
+  try {
+    const res = await fetch(`${API_BASE}?action=search&keyword=${encodeURIComponent(keyword)}&secret=${API_SECRET}`);
+    const results = await res.json();
+
+    if (results && results.length > 0) {
+      // 修复：补全缺失的 <tr> 和 <td> 标记
+      tbody.innerHTML = results.map(item => `
+        <tr>
+          <td><span class="badge-role"><i class="fa-solid fa-table"></i> ${item.sheetName}</span></td>
+          <td><b style="color: var(--primary); font-size: 15px;">${item.colA}</b></td>
+          <td>${item.colB}</td>
+          <td>${item.colC}</td>
+          <td>${item.colD}</td>
+          <td>${item.colE}</td>
+          <td>${item.colF}</td>
+        </tr>
+      `).join('');
+    } else {
+      // 修复：无结果提示同样增加表格单元格包装
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;"><i class="fa-solid fa-folder-open"></i> 未找到匹配 "${rawInput}" 的记录</td></tr>`;
+    }
+  } catch (err) {
+    // 修复：报错提示增加表格单元格包装
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">请求失败，请检查网络或后端配置。</td></tr>`;
+  }
+}
