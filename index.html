@@ -24,7 +24,7 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans pb-24">
 
     <!-- 0. 刷新页面强制询问姓名 -->
     <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -43,17 +43,33 @@
         </div>
     </div>
 
-    <!-- 规格选择弹窗 (用户端) -->
-    <div id="option-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <!-- 加入清单弹窗（选择数量与规格） -->
+    <div id="add-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5">
             <div>
-                <h3 id="option-modal-title" class="text-lg font-bold text-slate-800">选择商品规格</h3>
-                <p class="text-xs text-slate-500 mt-0.5">请选择你需要的口味或规格</p>
+                <h3 id="add-modal-title" class="text-lg font-bold text-slate-800">加入清单</h3>
+                <p class="text-xs text-slate-500 mt-0.5" id="add-modal-subtitle">请选择规格和补货数量</p>
             </div>
-            <div id="option-modal-list" class="space-y-2"></div>
+            
+            <!-- 规格选择（如有） -->
+            <div id="add-modal-options-container" class="space-y-2 hidden">
+                <label class="block text-xs font-semibold text-slate-500">选择规格/口味</label>
+                <div id="add-modal-options-list" class="space-y-1"></div>
+            </div>
+
+            <!-- 数量选择器 -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-500">补货数量</label>
+                <div class="flex items-center justify-center space-x-4 border py-2 rounded-xl bg-slate-50">
+                    <button onclick="changeModalQty(-1)" class="w-10 h-10 rounded-lg bg-white border font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center text-lg">-</button>
+                    <span id="add-modal-qty" class="text-xl font-bold text-slate-800 w-12 text-center">1</span>
+                    <button onclick="changeModalQty(1)" class="w-10 h-10 rounded-lg bg-white border font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center text-lg">+</button>
+                </div>
+            </div>
+
             <div class="flex gap-2 pt-2">
-                <button onclick="closeOptionModal()" class="w-1/2 border text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-slate-50">取消</button>
-                <button onclick="confirmAddWithOptions()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-md">确认加入</button>
+                <button onclick="closeAddModal()" class="w-1/2 border text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-slate-50">取消</button>
+                <button onclick="confirmAddToCart()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-md">确认放入购物车</button>
             </div>
         </div>
     </div>
@@ -112,7 +128,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
                 <div>
-                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货与补货系统</span>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
                     <span id="current-user-badge" class="text-xs text-slate-500 font-medium">👤 未登录</span>
                 </div>
             </div>
@@ -148,7 +164,7 @@
         <!-- 2. 用户个人订单 -->
         <section id="view-my-orders" class="hidden space-y-6">
             <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
-                <span>🔒 提示：提交的订单已锁定，如需修改请联系 Admin 管理员。</span>
+                <span>🔒 提示：已提交的订单将被锁定不可修改，如需调整请联系 Admin 管理员。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
@@ -178,7 +194,7 @@
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs text-slate-500 mt-1">控制商品上下架、编辑、单项总计与个人明细查询</p>
+                    <p class="text-xs text-slate-500 mt-1">按人员合并统计、商品管理、单项总计与明细控制</p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
@@ -194,8 +210,31 @@
                     <div id="stat-total-items" class="text-3xl font-black text-brand-600 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">总销售金额</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">总金额</span>
                     <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0</div>
+                </div>
+            </div>
+
+            <!-- 核心功能：按人名合并统计补货总数（即便多次下单也算一个名字） -->
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">👤 按人员汇总补货记录 (同一名字自动合并)</h3>
+                    <span class="text-xs text-slate-500">点击人员姓名可展开查看该人累积补货详情</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
+                            <tr>
+                                <th class="p-3">订货人姓名</th>
+                                <th class="p-3">下订单次数</th>
+                                <th class="p-3">累积补货种数</th>
+                                <th class="p-3 font-bold text-brand-700">累积补货总件数</th>
+                                <th class="p-3 font-bold text-purple-700">总花费金额</th>
+                                <th class="p-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-summary-table" class="divide-y"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -215,10 +254,10 @@
                 </form>
             </div>
 
-            <!-- 商品上架管理（编辑、下架、重新上架） -->
+            <!-- 商品上架管理 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">📦 已上架商品管理 (支持编辑与下架/恢复上架)</h3>
+                    <h3 class="font-bold text-slate-800">📦 已上架商品管理 (支持编辑与下架/恢复)</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -259,48 +298,50 @@
                 </div>
             </div>
 
-            <!-- 全员明细订单列表 (支持点名字看个人明细) -->
+            <!-- 全员明细订单列表 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表 (点击名字查看个人补货明细)</h3>
+                    <h3 class="font-bold text-slate-800">📜 全部明细订单时间线</h3>
                 </div>
                 <div id="admin-orders-list" class="divide-y"></div>
             </div>
         </section>
     </main>
 
-    <!-- 底部购物车悬浮条 -->
-    <div id="cart-drawer" class="fixed bottom-0 inset-x-0 bg-white border-t shadow-2xl z-40 transform transition-transform duration-300 translate-y-full">
-        <div class="max-w-6xl mx-auto px-4 py-4">
-            <div class="flex items-center justify-between mb-3 border-b pb-2">
+    <!-- 弹窗式购物车 (点击小绿车才会弹出，不在主界面占用显示) -->
+    <div id="cart-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b pb-3">
                 <div class="flex items-center space-x-2">
-                    <span class="font-bold text-slate-800">🛒 已选清单</span>
-                    <span class="text-xs text-slate-400">(未提交前可随时修改)</span>
+                    <span class="font-bold text-lg text-slate-800">🛒 已选订货清单</span>
+                    <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空全部</button>
                 </div>
-                <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空全部</button>
+                <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
             </div>
-            
-            <div id="cart-items" class="max-h-48 overflow-y-auto divide-y mb-4"></div>
 
-            <div class="flex items-center justify-between pt-2 border-t">
-                <div class="text-xs text-slate-500">
-                    订货人: <span id="cart-user-name" class="font-bold text-slate-700">未输入</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right">
+            <!-- 清单列表 -->
+            <div id="cart-modal-items" class="overflow-y-auto divide-y flex-1 pr-1"></div>
+
+            <div class="border-t pt-4 space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500">订货人: <strong id="cart-modal-user" class="text-slate-800">未输入</strong></span>
+                    <div>
                         <span class="text-xs text-slate-500">合计:</span>
-                        <span id="cart-total" class="text-xl font-bold text-brand-600">¥0</span>
+                        <span id="cart-modal-total" class="text-2xl font-black text-brand-600 ml-1">¥0</span>
                     </div>
-                    <button onclick="submitOrder()" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-md shadow-brand-200">确认提交订单</button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleCartModal(false)" class="w-1/3 border text-slate-600 font-medium py-3 rounded-xl text-sm">再看看</button>
+                    <button onclick="submitOrder()" class="w-2/3 bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-brand-200 transition">确认提交订单</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 购物车悬浮按钮 -->
-    <button id="cart-trigger" onclick="toggleCart(true)" class="fixed bottom-6 right-6 bg-brand-600 hover:bg-brand-700 text-white p-4 rounded-full shadow-xl z-30 flex items-center justify-center transition">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        <span id="cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+    <!-- 悬浮小绿车按钮 -->
+    <button id="cart-trigger" onclick="toggleCartModal(true)" class="fixed bottom-6 right-6 bg-brand-600 hover:bg-brand-700 text-white p-4 rounded-full shadow-2xl z-40 flex items-center justify-center transition hover:scale-105 active:scale-95">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span id="cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
     </button>
 
     <!-- 页脚管理员入口 -->
@@ -312,7 +353,6 @@
 
     <!-- JavaScript 脚本 -->
     <script>
-        // 初始商品库 (增加 status 属性：'active' 上架，'disabled' 下架)
         const defaultProducts = [
             { id: 101, name: '亚发白咖啡', price: 15, category: '饮料', options: ['特濃', '原味', '炭烧'], desc: '香浓可口，传统口感', status: 'active' },
             { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', options: [], desc: '浓郁牛肉汤，配合手打面条', status: 'active' },
@@ -325,8 +365,11 @@
         
         let currentUser = ''; 
         let cart = {}; 
-        let selectedProductForOption = null;
-        let selectedOptionValue = '';
+        
+        // 弹窗相关临时变量
+        let currentAddingProduct = null;
+        let currentSelectedOption = '';
+        let currentModalQty = 1;
 
         let isAdminLoggedIn = false;
         const ADMIN_PASSWORD = "admin123";
@@ -348,7 +391,7 @@
 
         function updateUserBadge() {
             document.getElementById('current-user-badge').innerText = `👤 订货人: ${currentUser}`;
-            document.getElementById('cart-user-name').innerText = currentUser;
+            document.getElementById('cart-modal-user').innerText = currentUser;
         }
 
         function switchView(view) {
@@ -377,7 +420,7 @@
             }
         }
 
-        // 普通用户端：只展示状态为 'active' (已上架) 的商品
+        // 渲染商品列表
         function renderProducts(category = 'all') {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = '';
@@ -410,7 +453,7 @@
                     </div>
                     <div class="flex items-center justify-between pt-4 border-t mt-4">
                         <span class="text-lg font-black text-brand-600">¥${p.price}</span>
-                        <button onclick="handleAddToCartClick(${p.id})" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-xl text-sm font-medium transition">+ 加入清单</button>
+                        <button onclick="openAddModal(${p.id})" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-xl text-sm font-medium transition shadow-sm">+ 加入清单</button>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -425,99 +468,110 @@
             renderProducts(cat);
         }
 
-        function handleAddToCartClick(prodId) {
+        // 打开“先选择数量与规格”弹窗
+        function openAddModal(prodId) {
             const p = products.find(item => item.id === prodId);
             if (!p) return;
 
+            currentAddingProduct = p;
+            currentModalQty = 1;
+            document.getElementById('add-modal-qty').innerText = currentModalQty;
+            document.getElementById('add-modal-title').innerText = `加入 [${p.name}]`;
+
+            const optContainer = document.getElementById('add-modal-options-container');
+            const optList = document.getElementById('add-modal-options-list');
+
             if (p.options && p.options.length > 0) {
-                selectedProductForOption = p;
-                selectedOptionValue = p.options[0];
-                document.getElementById('option-modal-title').innerText = `选择 [${p.name}] 规格`;
-                
-                const list = document.getElementById('option-modal-list');
-                list.innerHTML = p.options.map((opt, idx) => `
-                    <label class="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-slate-50">
-                        <span class="text-sm font-medium text-slate-700">${opt}</span>
-                        <input type="radio" name="prod-opt-radio" value="${opt}" ${idx === 0 ? 'checked' : ''} onchange="selectedOptionValue='${opt}'" class="accent-brand-600">
+                currentSelectedOption = p.options[0];
+                optContainer.classList.remove('hidden');
+                optList.innerHTML = p.options.map((opt, idx) => `
+                    <label class="flex items-center justify-between p-2.5 border rounded-xl cursor-pointer hover:bg-slate-50 text-sm">
+                        <span class="font-medium text-slate-700">${opt}</span>
+                        <input type="radio" name="modal-opt" value="${opt}" ${idx === 0 ? 'checked' : ''} onchange="currentSelectedOption='${opt}'" class="accent-brand-600">
                     </label>
                 `).join('');
-
-                document.getElementById('option-modal').classList.remove('hidden');
             } else {
-                addToCart(p.id, '');
+                currentSelectedOption = '';
+                optContainer.classList.add('hidden');
             }
+
+            document.getElementById('add-modal').classList.remove('hidden');
         }
 
-        function closeOptionModal() {
-            document.getElementById('option-modal').classList.add('hidden');
-            selectedProductForOption = null;
+        function changeModalQty(delta) {
+            currentModalQty += delta;
+            if (currentModalQty < 1) currentModalQty = 1;
+            document.getElementById('add-modal-qty').innerText = currentModalQty;
         }
 
-        function confirmAddWithOptions() {
-            if (selectedProductForOption) {
-                addToCart(selectedProductForOption.id, selectedOptionValue);
-                closeOptionModal();
-            }
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            currentAddingProduct = null;
         }
 
-        function addToCart(id, option) {
+        function confirmAddToCart() {
+            if (!currentAddingProduct) return;
+
+            const id = currentAddingProduct.id;
+            const option = currentSelectedOption;
+            const qty = currentModalQty;
             const cartKey = option ? `${id}_${option}` : `${id}_default`;
-            cart[cartKey] = (cart[cartKey] || 0) + 1;
-            updateCartUI();
-            toggleCart(true);
+
+            cart[cartKey] = (cart[cartKey] || 0) + qty;
+
+            updateCartBadge();
+            closeAddModal();
         }
 
-        function updateCartCount(cartKey, delta) {
-            if (cart[cartKey]) {
-                cart[cartKey] += delta;
-                if (cart[cartKey] <= 0) delete cart[cartKey];
-            }
-            updateCartUI();
-        }
-
-        function removeSingleCartItem(cartKey) {
-            delete cart[cartKey];
-            updateCartUI();
-        }
-
-        function clearCart() {
-            cart = {};
-            updateCartUI();
-            toggleCart(false);
-        }
-
-        function toggleCart(show) {
-            const drawer = document.getElementById('cart-drawer');
-            if (show && Object.keys(cart).length > 0) {
-                drawer.classList.remove('translate-y-full');
-            } else if (!show) {
-                drawer.classList.add('translate-y-full');
+        // 弹窗式购物车管理
+        function toggleCartModal(show) {
+            const modal = document.getElementById('cart-modal');
+            if (show) {
+                renderCartModalContent();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
             }
         }
 
-        function updateCartUI() {
-            const container = document.getElementById('cart-items');
+        function updateCartBadge() {
+            let countTotal = 0;
+            Object.values(cart).forEach(cnt => countTotal += cnt);
+            const badge = document.getElementById('cart-badge');
+            if (countTotal > 0) {
+                badge.innerText = countTotal;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderCartModalContent() {
+            const container = document.getElementById('cart-modal-items');
             container.innerHTML = '';
             let total = 0;
-            let countTotal = 0;
+
+            if (Object.keys(cart).length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400">购物车空空如也</div>`;
+                document.getElementById('cart-modal-total').innerText = '¥0';
+                return;
+            }
 
             Object.keys(cart).forEach(cartKey => {
                 const parts = cartKey.split('_');
                 const pId = parts[0];
                 const option = parts[1] === 'default' ? '' : parts[1];
-
                 const p = products.find(prod => prod.id == pId);
                 if (!p) return;
 
                 const count = cart[cartKey];
                 const subtotal = p.price * count;
                 total += subtotal;
-                countTotal += count;
 
                 const displayName = option ? `${p.name} (${option})` : p.name;
 
                 const itemRow = document.createElement('div');
-                itemRow.className = "flex items-center justify-between py-2.5";
+                itemRow.className = "flex items-center justify-between py-3";
                 itemRow.innerHTML = `
                     <div class="flex-1">
                         <div class="font-medium text-sm text-slate-800">${displayName}</div>
@@ -530,7 +584,7 @@
                             <button onclick="updateCartCount('${cartKey}', 1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">+</button>
                         </div>
                         <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${subtotal}</span>
-                        <button onclick="removeSingleCartItem('${cartKey}')" class="text-slate-300 hover:text-red-500 p-1" title="取消此项">
+                        <button onclick="removeSingleCartItem('${cartKey}')" class="text-slate-300 hover:text-red-500 p-1" title="删除此项">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>
@@ -538,15 +592,28 @@
                 container.appendChild(itemRow);
             });
 
-            document.getElementById('cart-total').innerText = `¥${total}`;
-            const badge = document.getElementById('cart-badge');
-            if (countTotal > 0) {
-                badge.innerText = countTotal;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-                toggleCart(false);
+            document.getElementById('cart-modal-total').innerText = `¥${total}`;
+        }
+
+        function updateCartCount(cartKey, delta) {
+            if (cart[cartKey]) {
+                cart[cartKey] += delta;
+                if (cart[cartKey] <= 0) delete cart[cartKey];
             }
+            updateCartBadge();
+            renderCartModalContent();
+        }
+
+        function removeSingleCartItem(cartKey) {
+            delete cart[cartKey];
+            updateCartBadge();
+            renderCartModalContent();
+        }
+
+        function clearCart() {
+            cart = {};
+            updateCartBadge();
+            renderCartModalContent();
         }
 
         function submitOrder() {
@@ -590,6 +657,7 @@
             localStorage.setItem('orders', JSON.stringify(orders));
 
             clearCart();
+            toggleCartModal(false);
             alert('🎉 订货/补货成功！订单已保存。');
             switchView('my-orders');
         }
@@ -628,7 +696,7 @@
             });
         }
 
-        // 管理员验证
+        // 管理员验证与退出
         function verifyAdmin(e) {
             e.preventDefault();
             const pass = document.getElementById('admin-pass-input').value;
@@ -649,7 +717,7 @@
             switchView('shop');
         }
 
-        // Admin 功能: 上架新商品
+        // Admin: 上架新商品
         function addNewProduct(e) {
             e.preventDefault();
             const name = document.getElementById('new-prod-name').value.trim();
@@ -686,7 +754,6 @@
             renderAdminDashboard();
         }
 
-        // Admin 功能: 切换上架/下架状态
         function toggleProductStatus(prodId) {
             const p = products.find(item => item.id === prodId);
             if (p) {
@@ -697,7 +764,6 @@
             }
         }
 
-        // Admin 功能: 打开编辑模态框
         function openEditModal(prodId) {
             const p = products.find(item => item.id === prodId);
             if (!p) return;
@@ -736,7 +802,6 @@
             alert('✅ 商品信息修改成功！');
         }
 
-        // Admin 功能: 彻底删除商品
         function deleteProductPermanently(prodId) {
             if (confirm('确定要彻底删除该商品吗？')) {
                 products = products.filter(p => p.id !== prodId);
@@ -746,17 +811,15 @@
             }
         }
 
-        // Admin 功能: 点击用户名查看该用户所有订货/补货明细
         function showUserDetail(customerName) {
             const userOrders = orders.filter(o => o.customer === customerName);
-            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的补货明细`;
+            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的累计补货详情`;
             const container = document.getElementById('user-detail-content');
             container.innerHTML = '';
 
             if (userOrders.length === 0) {
                 container.innerHTML = `<div class="text-center py-4 text-slate-400">暂无明细</div>`;
             } else {
-                // 汇总该用户补过的所有商品
                 const userSummaryMap = {};
                 userOrders.forEach(o => {
                     o.items.forEach(i => {
@@ -765,7 +828,7 @@
                     });
                 });
 
-                let summaryHtml = `<div class="bg-purple-50 p-3 rounded-xl mb-3 border border-purple-100"><div class="text-xs font-bold text-purple-700 mb-1">📦 补货总量汇总：</div>`;
+                let summaryHtml = `<div class="bg-purple-50 p-3 rounded-xl mb-3 border border-purple-100"><div class="text-xs font-bold text-purple-700 mb-1">📦 累积补货总量汇总：</div>`;
                 Object.keys(userSummaryMap).forEach(k => {
                     summaryHtml += `<div class="text-xs text-purple-900 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} 份</span></div>`;
                 });
@@ -800,7 +863,49 @@
             let totalItems = 0;
             let totalAmount = 0;
 
-            // 1. 渲染上架商品管理表格
+            // 1. 按“名字”合并的汇总统计逻辑
+            const userAggregatedMap = {}; // { customerName: { orderCount, totalItems, totalSpent, itemMap } }
+            orders.forEach(o => {
+                const name = o.customer;
+                if (!userAggregatedMap[name]) {
+                    userAggregatedMap[name] = { orderCount: 0, totalItems: 0, totalSpent: 0, itemKinds: new Set() };
+                }
+                userAggregatedMap[name].orderCount += 1;
+                userAggregatedMap[name].totalSpent += o.total;
+
+                o.items.forEach(i => {
+                    userAggregatedMap[name].totalItems += i.count;
+                    userAggregatedMap[name].itemKinds.add(i.fullName || i.name);
+                });
+            });
+
+            const userSummaryTableBody = document.getElementById('admin-user-summary-table');
+            userSummaryTableBody.innerHTML = '';
+
+            if (Object.keys(userAggregatedMap).length === 0) {
+                userSummaryTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">暂无任何订货记录</td></tr>`;
+            } else {
+                Object.keys(userAggregatedMap).forEach(name => {
+                    const data = userAggregatedMap[name];
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-slate-800">${name}</td>
+                        <td class="p-3 text-slate-500">${data.orderCount} 次</td>
+                        <td class="p-3 text-slate-500">${data.itemKinds.size} 种</td>
+                        <td class="p-3 font-bold text-brand-600">${data.totalItems} 份</td>
+                        <td class="p-3 font-bold text-purple-700">¥${data.totalSpent}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="showUserDetail('${name}')" class="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-lg font-medium hover:bg-purple-100">
+                                查看具体补了什么货
+                            </button>
+                        </td>
+                    `;
+                    userSummaryTableBody.appendChild(tr);
+                });
+            }
+
+            // 2. 上架商品管理表格
             const prodTableBody = document.getElementById('admin-product-management-table');
             prodTableBody.innerHTML = '';
             products.forEach(p => {
@@ -828,9 +933,8 @@
                 prodTableBody.appendChild(tr);
             });
             
-            // 2. 统计单项/规格订货总量
+            // 3. 统计单项/规格订货总量
             const summaryMap = {};
-
             orders.forEach(o => {
                 totalAmount += o.total;
                 o.items.forEach(i => {
@@ -856,7 +960,7 @@
             document.getElementById('stat-total-items').innerText = totalItems;
             document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
 
-            // 3. 渲染单项/规格汇总表格
+            // 4. 单项/规格汇总表格
             const summaryTableBody = document.getElementById('admin-summary-table');
             summaryTableBody.innerHTML = '';
 
@@ -873,7 +977,7 @@
                 summaryTableBody.appendChild(tr);
             });
 
-            // 4. 渲染全员订单明细列表 (点击名字触发弹窗)
+            // 5. 明细时间线列表
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
@@ -883,11 +987,7 @@
                 div.innerHTML = `
                     <div>
                         <div class="flex items-center space-x-2">
-                            <!-- 点击名字查看补货明细 -->
-                            <button onclick="showUserDetail('${o.customer}')" class="font-bold text-brand-700 hover:text-brand-900 hover:underline flex items-center gap-1" title="点击查看该用户补货明细">
-                                👤 ${o.customer}
-                                <span class="text-[10px] bg-brand-100 text-brand-800 px-1.5 py-0.5 rounded-full font-normal">查明细</span>
-                            </button>
+                            <button onclick="showUserDetail('${o.customer}')" class="font-bold text-brand-700 hover:underline">👤 ${o.customer}</button>
                             <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">${o.id}</span>
                             <span class="text-xs text-slate-400">${o.time}</span>
                         </div>
