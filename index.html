@@ -1,266 +1,547 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>银行代码查询系统</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-    }
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      background: var(--card-bg);
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .auth-box {
-      max-width: 400px;
-      margin: 60px auto;
-      padding: 28px;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-    .auth-box h2 {
-      margin-top: 0;
-      margin-bottom: 20px;
-      color: var(--primary);
-      text-align: center;
-    }
-    .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; margin-bottom: 6px; font-weight: 500; }
-    .input-group input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 15px;
-      outline: none;
-    }
-    .input-group input:focus { border-color: var(--primary); }
-    .search-box { display: flex; gap: 12px; margin-bottom: 24px; }
-    input[type="text"] {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 16px;
-      outline: none;
-    }
-    input[type="text"]:focus { border-color: var(--primary); }
-    button {
-      padding: 10px 20px;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    button:hover { background-color: var(--primary-hover); }
-    button:disabled { background-color: #94a3b8; cursor: not-allowed; }
-    .hidden { display: none !important; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { background-color: #f1f5f9; font-weight: 600; }
-    .badge-role {
-      background: #e0e7ff;
-      color: #3730a3;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线订货系统</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
-  <!-- 1. 登录界面 -->
-  <div id="login-section" class="auth-box">
-    <h2><i class="fa-solid fa-lock"></i> 用户登录</h2>
-    <div class="input-group">
-      <label for="login-username">用户名</label>
-      <input type="text" id="login-username" placeholder="请输入用户名" onkeyup="if(event.key==='Enter') handleLogin()">
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm border-b sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('shop')">
+                <div class="bg-brand-600 text-white p-2 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                <span class="font-bold text-xl text-slate-800 tracking-tight">快捷订货系统</span>
+            </div>
+
+            <!-- 用户侧导航 -->
+            <nav class="flex items-center space-x-1 sm:space-x-2">
+                <button onclick="switchView('shop')" id="nav-shop" class="px-4 py-2 rounded-lg text-sm font-medium transition bg-brand-50 text-brand-700">
+                    🛍️ 开始订货
+                </button>
+                <button onclick="switchView('my-orders')" id="nav-my-orders" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100">
+                    📋 我的订单
+                </button>
+                <!-- 管理员面板按钮（默认隐藏） -->
+                <button onclick="switchView('admin')" id="nav-admin" class="hidden px-4 py-2 rounded-lg text-sm font-medium transition text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200">
+                    👑 管理员控制台
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- 1. 用户订货界面 -->
+        <section id="view-shop" class="block space-y-6">
+            <div class="flex flex-wrap gap-2 pb-2">
+                <button onclick="filterCategory('all')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-brand-600 text-white">全部商品</button>
+                <button onclick="filterCategory('主食')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🍱 主食餐点</button>
+                <button onclick="filterCategory('饮料')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🥤 饮品甜点</button>
+                <button onclick="filterCategory('零食')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🍿 休闲零食</button>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- 2. 用户个人订单查看界面 -->
+        <section id="view-my-orders" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border shadow-sm max-w-xl mx-auto">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">查询我的历史订单</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="my-name-input" placeholder="输入订货时填写的姓名/手机号" class="flex-1 px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                    <button onclick="queryMyOrders()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl font-medium transition">查询</button>
+                </div>
+            </div>
+            <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
+        </section>
+
+        <!-- 3. 管理员鉴权弹窗 (非管理员不可看) -->
+        <section id="view-admin-login" class="hidden">
+            <div class="max-w-md mx-auto my-12 bg-white p-8 rounded-2xl border shadow-md space-y-4">
+                <div class="text-center space-y-1">
+                    <div class="inline-block p-3 bg-purple-100 rounded-full text-purple-600 mb-2">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">管理员身份验证</h2>
+                    <p class="text-sm text-slate-500">此区域仅限管理员查看汇总与管理后台</p>
+                </div>
+                <form onsubmit="verifyAdmin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">管理员密码</label>
+                        <input type="password" id="admin-pass-input" placeholder="请输入密码 (默认: admin123)" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+                    </div>
+                    <div id="admin-error-msg" class="text-red-500 text-xs hidden">密码错误，请重新输入！</div>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition">进入后台</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 4. 管理员控制台 (通过验证后渲染) -->
+        <section id="view-admin" class="hidden space-y-8">
+            <div class="flex items-center justify-between border-b pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
+                    <p class="text-xs text-slate-500 mt-1">查看全员订货统计及单项汇总</p>
+                </div>
+                <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
+            </div>
+
+            <!-- 数据概览卡片 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border shadow-sm">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">总订单数</span>
+                    <div id="stat-total-orders" class="text-3xl font-black text-slate-800 mt-1">0</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">销售总件数</span>
+                    <div id="stat-total-items" class="text-3xl font-black text-brand-600 mt-1">0</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">总销售金额</span>
+                    <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0</div>
+                </div>
+            </div>
+
+            <!-- 单项汇总统计 (重点：看一项货订了多少) -->
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">📊 单项商品汇总统计</h3>
+                    <span class="text-xs text-slate-500">自动实时统计所有用户订货总量</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
+                            <tr>
+                                <th class="p-3">商品名称</th>
+                                <th class="p-3">分类</th>
+                                <th class="p-3">单价</th>
+                                <th class="p-3 text-brand-700 font-bold">订购总数量</th>
+                                <th class="p-3">小计金额</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-summary-table" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 全部订单明细管理 -->
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表</h3>
+                </div>
+                <div id="admin-orders-list" class="divide-y"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部购物车悬浮条 -->
+    <div id="cart-drawer" class="fixed bottom-0 inset-x-0 bg-white border-t shadow-2xl z-40 transform transition-transform duration-300 translate-y-full">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-800">🛒 已选清单</span>
+                    <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空</button>
+                </div>
+                <button onclick="toggleCart(false)" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            
+            <div id="cart-items" class="max-h-48 overflow-y-auto divide-y mb-4"></div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <label class="text-sm font-medium text-slate-700 whitespace-nowrap">订货人姓名/联系方式:</label>
+                    <input type="text" id="customer-name" placeholder="请输入你的名字" class="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-48">
+                </div>
+                <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+                    <div class="text-right">
+                        <span class="text-xs text-slate-500">合计:</span>
+                        <span id="cart-total" class="text-xl font-bold text-brand-600">¥0</span>
+                    </div>
+                    <button onclick="submitOrder()" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-md shadow-brand-200">确认提交订单</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="input-group">
-      <label for="login-password">密码</label>
-      <input type="password" id="login-password" placeholder="请输入密码" onkeyup="if(event.key==='Enter') handleLogin()">
-    </div>
-    <button id="login-btn" style="width: 100%; margin-top: 8px;" onclick="handleLogin()">登录</button>
-  </div>
 
-  <!-- 2. 搜索界面（默认隐藏，登录成功后显示） -->
-  <div id="main-section" class="container hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h2 style="margin: 0; color: var(--primary);"><i class="fa-solid fa-database"></i> 银行代码查询系统</h2>
-      <button onclick="handleLogout()" style="background: #64748b;"><i class="fa-solid fa-right-from-bracket"></i> 退出登录</button>
-    </div>
+    <!-- 触发打开购物车的悬浮按钮 -->
+    <button id="cart-trigger" onclick="toggleCart(true)" class="fixed bottom-6 right-6 bg-brand-600 hover:bg-brand-700 text-white p-4 rounded-full shadow-xl z-30 flex items-center justify-center transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span id="cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+    </button>
 
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="请输入关键词搜索（例如：46 R1）..." onkeyup="if(event.key==='Enter') handleSearch()">
-      <button onclick="handleSearch()"><i class="fa-solid fa-magnifying-glass"></i> 搜索</button>
-    </div>
+    <!-- 页脚管理员入口 -->
+    <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-400">
+        <span>© 订货管理系统</span>
+        <span class="mx-2">•</span>
+        <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
+    </footer>
 
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>银行 (Tab)</th>
-            <th>代码 (A)</th>
-            <th>信息 (B)</th>
-            <th>信息 (C)</th>
-            <th>信息 (D)</th>
-            <th>信息 (E)</th>
-            <th>信息 (F)</th>
-          </tr>
-        </thead>
-        <tbody id="search-results">
-          <tr>
-            <td colspan="7" style="text-align: center; color: #64748b; padding: 30px;">
-              <i class="fa-solid fa-circle-info"></i> 请在上方输入关键词并点击搜索
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <!-- JavaScript 脚本 -->
+    <script>
+        // 初始商品库
+        const defaultProducts = [
+            { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', desc: '浓郁牛肉汤，配合手打面条' },
+            { id: 2, name: '日式照烧鸡腿饭', price: 25, category: '主食', desc: '嫩滑鸡肉与鲜甜照烧汁' },
+            { id: 3, name: '冰镇柠檬红茶', price: 12, category: '饮料', desc: '手压新鲜柠檬，清凉解渴' },
+            { id: 4, name: '珍珠奶茶 (大杯)', price: 15, category: '饮料', desc: 'Q弹珍珠与浓郁奶香' },
+            { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, category: '零食', desc: '外酥里嫩，金黄香脆' },
+            { id: 6, name: '经典薯条', price: 10, category: '零食', desc: '现炸粗薯，附赠番茄酱' }
+        ];
 
-  <script>
-    const API_BASE = "https://script.google.com/macros/s/AKfycbxjSxPCeMR2YnjaC2mxoulDwVDBQschzx6orkrKgofuE-mUlYFuIHhnmTz5P2hSeViicA/exec";
-    const API_SECRET = "lg553";
+        // 默认示范订单
+        const defaultOrders = [
+            { id: 'ORD-101', customer: '张三', items: [{ id: 1, name: '招牌红烧牛肉面', price: 28, count: 2 }, { id: 3, name: '冰镇柠檬红茶', price: 12, count: 1 }], total: 68, status: '已完成', time: '2026-11-03 10:15' },
+            { id: 'ORD-102', customer: '李四', items: [{ id: 2, name: '日式照烧鸡腿饭', price: 25, count: 1 }, { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, count: 2 }], total: 61, status: '处理中', time: '2026-11-03 11:40' }
+        ];
 
-    let currentUser = null;
+        // 本地存储初始化
+        let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
+        let orders = JSON.parse(localStorage.getItem('orders')) || defaultOrders;
+        let cart = {}; // { productId: count }
+        let isAdminLoggedIn = false;
+        const ADMIN_PASSWORD = "admin123"; // 默认管理员密码
 
-    // 实时发请求验证登录
-    async function handleLogin() {
-      const uVal = document.getElementById("login-username").value.trim();
-      const pVal = document.getElementById("login-password").value.trim();
+        // 视图切换控制
+        function switchView(view) {
+            document.getElementById('view-shop').classList.add('hidden');
+            document.getElementById('view-my-orders').classList.add('hidden');
+            document.getElementById('view-admin-login').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
 
-      if (!uVal || !pVal) {
-        alert("请输入用户名和密码！");
-        return;
-      }
-
-      const loginBtn = document.getElementById("login-btn");
-      loginBtn.innerText = "正在验证...";
-      loginBtn.disabled = true;
-
-      try {
-        // 请求后台获取最新数据
-        const res = await fetch(`${API_BASE}?action=getUsers&secret=${API_SECRET}`);
-        const users = await res.json();
-
-        loginBtn.innerText = "登录";
-        loginBtn.disabled = false;
-
-        if (Array.isArray(users)) {
-          // 统一转字符串进行精准匹配
-          const matchedUser = users.find(u => 
-            String(u.username).trim() === uVal && 
-            String(u.password).trim() === pVal
-          );
-
-          if (matchedUser) {
-            currentUser = matchedUser;
-            document.getElementById("login-section").classList.add("hidden");
-            document.getElementById("main-section").classList.remove("hidden");
-            return;
-          }
+            document.getElementById('nav-shop').className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
+            document.getElementById('nav-my-orders').className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
+            
+            if (view === 'shop') {
+                document.getElementById('view-shop').classList.remove('hidden');
+                document.getElementById('nav-shop').className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-brand-50 text-brand-700";
+            } else if (view === 'my-orders') {
+                document.getElementById('view-my-orders').classList.remove('hidden');
+                document.getElementById('nav-my-orders').className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-brand-50 text-brand-700";
+            } else if (view === 'admin') {
+                if (isAdminLoggedIn) {
+                    document.getElementById('view-admin').classList.remove('hidden');
+                    renderAdminDashboard();
+                } else {
+                    document.getElementById('view-admin-login').classList.remove('hidden');
+                }
+            }
         }
-        alert("用户名或密码错误！");
 
-      } catch (err) {
-        console.error("登录失败:", err);
-        loginBtn.innerText = "登录";
-        loginBtn.disabled = false;
-        alert("连接服务器失败，请检查网络或配置！");
-      }
-    }
-
-    // 退出登录
-    function handleLogout() {
-      currentUser = null;
-      document.getElementById("login-username").value = "";
-      document.getElementById("login-password").value = "";
-      document.getElementById("login-section").classList.remove("hidden");
-      document.getElementById("main-section").classList.add("hidden");
-    }
-
-    // 执行搜索
-    async function handleSearch() {
-      const rawInput = document.getElementById("search-input").value;
-      const keyword = rawInput.trim();
-      const tbody = document.getElementById("search-results");
-
-      if (!keyword) {
-        alert("请输入要查找的内容！");
-        return;
-      }
-
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" style="text-align: center; padding: 30px;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i><br><br>
-            正在搜索数据...
-          </td>
-        </tr>`;
-
-      try {
-        const res = await fetch(`${API_BASE}?action=search&keyword=${encodeURIComponent(keyword)}&secret=${API_SECRET}`);
-        const results = await res.json();
-
-        if (Array.isArray(results) && results.length > 0) {
-          tbody.innerHTML = results.map(item => `
-            <tr>
-              <td><span class="badge-role"><i class="fa-solid fa-table"></i> ${item.sheetName}</span></td>
-              <td><b style="color: var(--primary); font-size: 15px;">${item.colA}</b></td>
-              <td>${item.colB}</td>
-              <td>${item.colC}</td>
-              <td>${item.colD}</td>
-              <td>${item.colE}</td>
-              <td>${item.colF}</td>
-            </tr>
-          `).join('');
-        } else {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">
-                <i class="fa-solid fa-folder-open"></i> 未找到匹配 "${rawInput}" 的记录
-              </td>
-            </tr>`;
+        // 渲染商品列表
+        function renderProducts(category = 'all') {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+            const filtered = category === 'all' ? products : products.filter(p => p.category === category);
+            
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-slate-800 text-lg">${p.name}</h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">${p.category}</span>
+                        </div>
+                        <p class="text-slate-500 text-xs mb-4 line-clamp-2">${p.desc}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t">
+                        <span class="text-lg font-black text-brand-600">¥${p.price}</span>
+                        <button onclick="addToCart(${p.id})" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-xl text-sm font-medium transition">+ 加入清单</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
-      } catch (err) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--danger); padding: 30px;">
-              请求失败，请检查网络配置。
-            </td>
-          </tr>`;
-      }
-    }
-  </script>
+
+        // 分类筛选
+        function filterCategory(cat) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50";
+            });
+            event.target.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-brand-600 text-white";
+            renderProducts(cat);
+        }
+
+        // 购物车管理
+        function addToCart(id) {
+            cart[id] = (cart[id] || 0) + 1;
+            updateCartUI();
+            toggleCart(true);
+        }
+
+        function updateCartCount(id, delta) {
+            if (cart[id]) {
+                cart[id] += delta;
+                if (cart[id] <= 0) delete cart[id];
+            }
+            updateCartUI();
+        }
+
+        function clearCart() {
+            cart = {};
+            updateCartUI();
+            toggleCart(false);
+        }
+
+        function toggleCart(show) {
+            const drawer = document.getElementById('cart-drawer');
+            if (show && Object.keys(cart).length > 0) {
+                drawer.classList.remove('translate-y-full');
+            } else if (!show) {
+                drawer.classList.add('translate-y-full');
+            }
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let total = 0;
+            let countTotal = 0;
+
+            Object.keys(cart).forEach(id => {
+                const p = products.find(prod => prod.id == id);
+                if (!p) return;
+                const count = cart[id];
+                const subtotal = p.price * count;
+                total += subtotal;
+                countTotal += count;
+
+                const itemRow = document.createElement('div');
+                itemRow.className = "flex items-center justify-between py-2.5";
+                itemRow.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-medium text-sm text-slate-800">${p.name}</div>
+                        <div class="text-xs text-slate-400">¥${p.price} / 份</div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center border rounded-lg overflow-hidden">
+                            <button onclick="updateCartCount(${p.id}, -1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">-</button>
+                            <span class="px-3 py-0.5 text-xs font-semibold">${count}</span>
+                            <button onclick="updateCartCount(${p.id}, 1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">+</button>
+                        </div>
+                        <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${subtotal}</span>
+                    </div>
+                `;
+                container.appendChild(itemRow);
+            });
+
+            document.getElementById('cart-total').innerText = `¥${total}`;
+            const badge = document.getElementById('cart-badge');
+            if (countTotal > 0) {
+                badge.innerText = countTotal;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                toggleCart(false);
+            }
+        }
+
+        // 提交订单
+        function submitOrder() {
+            const nameInput = document.getElementById('customer-name');
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('请填写订货人姓名或联系方式！');
+                return;
+            }
+
+            const items = Object.keys(cart).map(id => {
+                const p = products.find(prod => prod.id == id);
+                return { id: p.id, name: p.name, price: p.price, count: cart[id] };
+            });
+
+            const total = items.reduce((sum, item) => sum + item.price * item.count, 0);
+
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            const newOrder = {
+                id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
+                customer: name,
+                items: items,
+                total: total,
+                status: '处理中',
+                time: timeStr
+            };
+
+            orders.unshift(newOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+
+            clearCart();
+            alert('🎉 订货成功！你可以前往“我的订单”查看记录。');
+            document.getElementById('my-name-input').value = name;
+            switchView('my-orders');
+            queryMyOrders();
+        }
+
+        // 查询个人订单
+        function queryMyOrders() {
+            const queryName = document.getElementById('my-name-input').value.trim();
+            const container = document.getElementById('my-orders-list');
+            container.innerHTML = '';
+
+            if (!queryName) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400">请输入你的名字查询订单</div>`;
+                return;
+            }
+
+            const userOrders = orders.filter(o => o.customer.toLowerCase().includes(queryName.toLowerCase()));
+
+            if (userOrders.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400">未查询到 [${queryName}] 的订单记录</div>`;
+                return;
+            }
+
+            userOrders.forEach(o => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3";
+                const itemsHtml = o.items.map(i => `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.name} × ${i.count}</span><span class="text-slate-600">¥${i.price * i.count}</span></div>`).join('');
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center pb-2 border-b">
+                        <div>
+                            <span class="font-bold text-slate-800">${o.id}</span>
+                            <span class="text-xs text-slate-400 ml-2">${o.time}</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${o.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.status}</span>
+                    </div>
+                    <div>${itemsHtml}</div>
+                    <div class="text-right text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 管理员验证
+        function verifyAdmin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                document.getElementById('admin-error-msg').classList.add('hidden');
+                document.getElementById('nav-admin').classList.remove('hidden');
+                switchView('admin');
+            } else {
+                document.getElementById('admin-error-msg').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            document.getElementById('nav-admin').classList.add('hidden');
+            document.getElementById('admin-pass-input').value = '';
+            switchView('shop');
+        }
+
+        // 渲染管理员数据
+        function renderAdminDashboard() {
+            // 统计总数据
+            let totalOrders = orders.length;
+            let totalItems = 0;
+            let totalAmount = 0;
+            
+            // 统计每种商品的总订购量
+            const summaryMap = {}; // { productId: { name, category, price, totalCount, totalRevenue } }
+            products.forEach(p => {
+                summaryMap[p.id] = { name: p.name, category: p.category, price: p.price, totalCount: 0, totalRevenue: 0 };
+            });
+
+            orders.forEach(o => {
+                totalAmount += o.total;
+                o.items.forEach(i => {
+                    totalItems += i.count;
+                    if (summaryMap[i.id]) {
+                        summaryMap[i.id].totalCount += i.count;
+                        summaryMap[i.id].totalRevenue += i.count * i.price;
+                    } else {
+                        // 防止已删除商品报错
+                        summaryMap[i.id] = { name: i.name + ' (已下架)', category: '-', price: i.price, totalCount: i.count, totalRevenue: i.count * i.price };
+                    }
+                });
+            });
+
+            document.getElementById('stat-total-orders').innerText = totalOrders;
+            document.getElementById('stat-total-items').innerText = totalItems;
+            document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
+
+            // 渲染单项汇总表格
+            const tableBody = document.getElementById('admin-summary-table');
+            tableBody.innerHTML = '';
+            Object.values(summaryMap).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium text-slate-800">${item.name}</td>
+                    <td class="p-3 text-slate-500">${item.category}</td>
+                    <td class="p-3 text-slate-500">¥${item.price}</td>
+                    <td class="p-3 font-bold text-brand-600">${item.totalCount} 份</td>
+                    <td class="p-3 text-slate-700">¥${item.totalRevenue}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // 渲染全员订单明细
+            const ordersList = document.getElementById('admin-orders-list');
+            ordersList.innerHTML = '';
+            orders.forEach(o => {
+                const itemDesc = o.items.map(i => `${i.name} × ${i.count}`).join('、');
+                const div = document.createElement('div');
+                div.className = "p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50";
+                div.innerHTML = `
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-800">${o.customer}</span>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">${o.id}</span>
+                            <span class="text-xs text-slate-400">${o.time}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">订货明细: ${itemDesc}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="font-bold text-slate-800">¥${o.total}</span>
+                        <button onclick="toggleOrderStatus('${o.id}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-brand-50 text-brand-700 border-brand-200'}">
+                            ${o.status === '已完成' ? '重置为处理中' : '标记已完成'}
+                        </button>
+                    </div>
+                `;
+                ordersList.appendChild(div);
+            });
+        }
+
+        // 切换订单状态
+        function toggleOrderStatus(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = order.status === '已完成' ? '处理中' : '已完成';
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderAdminDashboard();
+            }
+        }
+
+        // 初始化页面
+        renderProducts();
+    </script>
 </body>
 </html>
