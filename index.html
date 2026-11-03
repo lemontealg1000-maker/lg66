@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快捷订货系统</title>
+    <title>快捷订货与补货系统</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <!-- 规格选择弹窗 -->
+    <!-- 规格选择弹窗 (用户端) -->
     <div id="option-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5">
             <div>
@@ -58,6 +58,52 @@
         </div>
     </div>
 
+    <!-- 用户明细查看弹窗 (Admin 点击名字触发) -->
+    <div id="user-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="user-detail-title" class="text-lg font-bold text-slate-800">用户订货明细</h3>
+                <button onclick="closeUserDetailModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
+            </div>
+            <div id="user-detail-content" class="max-h-80 overflow-y-auto space-y-3"></div>
+            <button onclick="closeUserDetailModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm transition">关闭窗口</button>
+        </div>
+    </div>
+
+    <!-- 编辑商品弹窗 (Admin 专用) -->
+    <div id="edit-prod-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800 border-b pb-2">✏️ 编辑商品信息</h3>
+            <form onsubmit="saveEditedProduct(event)" class="space-y-3">
+                <input type="hidden" id="edit-prod-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">商品名称</label>
+                    <input type="text" id="edit-prod-name" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">分类</label>
+                    <input type="text" id="edit-prod-cat" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">单价 (元)</label>
+                    <input type="number" step="0.01" id="edit-prod-price" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">规格/选项 (用逗号隔开)</label>
+                    <input type="text" id="edit-prod-options" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">描述</label>
+                    <input type="text" id="edit-prod-desc" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="w-1/2 border text-slate-600 font-medium py-2 rounded-xl text-sm hover:bg-slate-50">取消</button>
+                    <button type="submit" class="w-1/2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm shadow-md">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 顶部导航 -->
     <header class="bg-white shadow-sm border-b sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -66,7 +112,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
                 <div>
-                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货与补货系统</span>
                     <span id="current-user-badge" class="text-xs text-slate-500 font-medium">👤 未登录</span>
                 </div>
             </div>
@@ -102,7 +148,7 @@
         <!-- 2. 用户个人订单 -->
         <section id="view-my-orders" class="hidden space-y-6">
             <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
-                <span>🔒 提示：提交的订单已实时提交并锁定，如需修改请联系 Admin 管理员。</span>
+                <span>🔒 提示：提交的订单已锁定，如需修改请联系 Admin 管理员。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
@@ -132,7 +178,7 @@
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs text-slate-500 mt-1">查看全员订货统计、上架包含选项的商品及订单管理</p>
+                    <p class="text-xs text-slate-500 mt-1">控制商品上下架、编辑、单项总计与个人明细查询</p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
@@ -144,7 +190,7 @@
                     <div id="stat-total-orders" class="text-3xl font-black text-slate-800 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">销售总件数</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">订货总件数</span>
                     <div id="stat-total-items" class="text-3xl font-black text-brand-600 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
@@ -153,38 +199,59 @@
                 </div>
             </div>
 
-            <!-- 添加带选项的商品 -->
+            <!-- 上架新商品表单 -->
             <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
                 <h3 class="font-bold text-slate-800 flex items-center gap-2">
                     <span class="bg-purple-100 text-purple-600 p-1.5 rounded-lg text-xs">➕</span>
-                    添加新商品 (支持带规格/口味选项)
+                    上架新商品
                 </h3>
                 <form onsubmit="addNewProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <input type="text" id="new-prod-name" required placeholder="商品名称 (例如: 亚发白咖啡)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="text" id="new-prod-cat" required placeholder="分类 (例如: 饮料/主食)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <input type="text" id="new-prod-name" required placeholder="商品名称 (如: 亚发白咖啡)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <input type="text" id="new-prod-cat" required placeholder="分类 (如: 饮料/主食)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
                     <input type="number" step="0.01" id="new-prod-price" required placeholder="价格 (元)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="text" id="new-prod-options" placeholder="规格/口味 (用逗号隔开，如: 特浓,原味,炭烧)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 sm:col-span-2">
+                    <input type="text" id="new-prod-options" placeholder="规格/选项 (用逗号隔开，如: 特濃,原味,炭烧)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 sm:col-span-2">
                     <input type="text" id="new-prod-desc" placeholder="简短描述 (选填)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
                     <button type="submit" class="sm:col-span-2 lg:col-span-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm transition">上架该商品</button>
                 </form>
             </div>
 
-            <!-- 单项汇总统计 -->
+            <!-- 商品上架管理（编辑、下架、重新上架） -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">📊 单项商品及规格汇总统计</h3>
-                    <span class="text-xs text-slate-500">自动分拆统计各规格的总订购件数</span>
+                    <h3 class="font-bold text-slate-800">📦 已上架商品管理 (支持编辑与下架/恢复上架)</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                             <tr>
-                                <th class="p-3">商品及规格名称</th>
+                                <th class="p-3">商品名称</th>
                                 <th class="p-3">分类</th>
                                 <th class="p-3">单价</th>
-                                <th class="p-3 text-brand-700 font-bold">订购总数量</th>
-                                <th class="p-3">小计金额</th>
+                                <th class="p-3">规格选项</th>
+                                <th class="p-3">状态</th>
                                 <th class="p-3 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-product-management-table" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 单项汇总统计 (统计每一种具体订了多少) -->
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">📊 独立单项/规格 订货总件数统计</h3>
+                    <span class="text-xs text-slate-500">汇总所有人订购的各商品与具体规格总量</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
+                            <tr>
+                                <th class="p-3">商品及规格</th>
+                                <th class="p-3">分类</th>
+                                <th class="p-3">单价</th>
+                                <th class="p-3 text-brand-700 font-bold">已订总数量</th>
+                                <th class="p-3">小计总金额</th>
                             </tr>
                         </thead>
                         <tbody id="admin-summary-table" class="divide-y"></tbody>
@@ -192,10 +259,10 @@
                 </div>
             </div>
 
-            <!-- 全员订单列表 -->
+            <!-- 全员明细订单列表 (支持点名字看个人明细) -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <div class="p-4 border-b bg-slate-50">
-                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表 (Admin可管理)</h3>
+                <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表 (点击名字查看个人补货明细)</h3>
                 </div>
                 <div id="admin-orders-list" class="divide-y"></div>
             </div>
@@ -208,7 +275,7 @@
             <div class="flex items-center justify-between mb-3 border-b pb-2">
                 <div class="flex items-center space-x-2">
                     <span class="font-bold text-slate-800">🛒 已选清单</span>
-                    <span class="text-xs text-slate-400">(未提交前可随时修改或取消)</span>
+                    <span class="text-xs text-slate-400">(未提交前可随时修改)</span>
                 </div>
                 <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空全部</button>
             </div>
@@ -238,26 +305,26 @@
 
     <!-- 页脚管理员入口 -->
     <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-400">
-        <span>© 订货管理系统</span>
+        <span>© 订货与补货管理系统</span>
         <span class="mx-2">•</span>
         <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
     </footer>
 
     <!-- JavaScript 脚本 -->
     <script>
-        // 预设包含规格选项的商品
+        // 初始商品库 (增加 status 属性：'active' 上架，'disabled' 下架)
         const defaultProducts = [
-            { id: 101, name: '亚发白咖啡', price: 15, category: '饮料', options: ['特濃', '原味', '炭烧'], desc: '香浓可口，传统口感' },
-            { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', options: [], desc: '浓郁牛肉汤，配合手打面条' },
-            { id: 3, name: '冰镇柠檬红茶', price: 12, category: '饮料', options: ['正常糖', '少糖', '无糖'], desc: '手压新鲜柠檬，清凉解渴' },
-            { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, category: '零食', options: ['原味', '辣味'], desc: '外酥里嫩，金黄香脆' }
+            { id: 101, name: '亚发白咖啡', price: 15, category: '饮料', options: ['特濃', '原味', '炭烧'], desc: '香浓可口，传统口感', status: 'active' },
+            { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', options: [], desc: '浓郁牛肉汤，配合手打面条', status: 'active' },
+            { id: 3, name: '冰镇柠檬红茶', price: 12, category: '饮料', options: ['正常糖', '少糖', '无糖'], desc: '手压新鲜柠檬，清凉解渴', status: 'active' },
+            { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, category: '零食', options: ['原味', '辣味'], desc: '外酥里嫩，金黄香脆', status: 'active' }
         ];
 
         let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
         let orders = JSON.parse(localStorage.getItem('orders')) || [];
         
         let currentUser = ''; 
-        let cart = {}; // key: "prodId_selectedOption" -> count
+        let cart = {}; 
         let selectedProductForOption = null;
         let selectedOptionValue = '';
 
@@ -310,11 +377,19 @@
             }
         }
 
+        // 普通用户端：只展示状态为 'active' (已上架) 的商品
         function renderProducts(category = 'all') {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = '';
-            const filtered = category === 'all' ? products : products.filter(p => p.category === category);
             
+            const activeProducts = products.filter(p => (p.status || 'active') === 'active');
+            const filtered = category === 'all' ? activeProducts : activeProducts.filter(p => p.category === category);
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">暂无已上架商品</div>`;
+                return;
+            }
+
             filtered.forEach(p => {
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between";
@@ -350,15 +425,13 @@
             renderProducts(cat);
         }
 
-        // 处理点击加购物车（判断是否有规格选项）
         function handleAddToCartClick(prodId) {
             const p = products.find(item => item.id === prodId);
             if (!p) return;
 
             if (p.options && p.options.length > 0) {
-                // 打开规格选择弹窗
                 selectedProductForOption = p;
-                selectedOptionValue = p.options[0]; // 默认选中第一个
+                selectedOptionValue = p.options[0];
                 document.getElementById('option-modal-title').innerText = `选择 [${p.name}] 规格`;
                 
                 const list = document.getElementById('option-modal-list');
@@ -371,7 +444,6 @@
 
                 document.getElementById('option-modal').classList.remove('hidden');
             } else {
-                // 无规格直接添加
                 addToCart(p.id, '');
             }
         }
@@ -518,7 +590,7 @@
             localStorage.setItem('orders', JSON.stringify(orders));
 
             clearCart();
-            alert('🎉 订货成功！订单已保存提交。');
+            alert('🎉 订货/补货成功！订单已保存。');
             switchView('my-orders');
         }
 
@@ -529,7 +601,7 @@
             const userOrders = orders.filter(o => o.customer === currentUser);
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-12 text-slate-400">暂无 [${currentUser}] 的历史订单</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-slate-400">暂无 [${currentUser}] 的历史记录</div>`;
                 return;
             }
 
@@ -548,7 +620,7 @@
                     </div>
                     <div>${itemsHtml}</div>
                     <div class="flex justify-between items-center pt-2">
-                        <span class="text-xs text-slate-400">🔒 已提交 (仅Admin可修改)</span>
+                        <span class="text-xs text-slate-400">🔒 已锁定 (仅Admin可修改)</span>
                         <div class="text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
                     </div>
                 `;
@@ -556,6 +628,7 @@
             });
         }
 
+        // 管理员验证
         function verifyAdmin(e) {
             e.preventDefault();
             const pass = document.getElementById('admin-pass-input').value;
@@ -576,7 +649,7 @@
             switchView('shop');
         }
 
-        // 添加商品（解析逗号分割的选项）
+        // Admin 功能: 上架新商品
         function addNewProduct(e) {
             e.preventDefault();
             const name = document.getElementById('new-prod-name').value.trim();
@@ -595,7 +668,8 @@
                 category: category,
                 price: price,
                 options: options,
-                desc: desc
+                desc: desc,
+                status: 'active'
             };
 
             products.push(newProd);
@@ -612,8 +686,59 @@
             renderAdminDashboard();
         }
 
-        function deleteProduct(prodId) {
-            if (confirm('确定要下架删除这个商品吗？')) {
+        // Admin 功能: 切换上架/下架状态
+        function toggleProductStatus(prodId) {
+            const p = products.find(item => item.id === prodId);
+            if (p) {
+                p.status = (p.status === 'disabled') ? 'active' : 'disabled';
+                localStorage.setItem('products', JSON.stringify(products));
+                renderProducts();
+                renderAdminDashboard();
+            }
+        }
+
+        // Admin 功能: 打开编辑模态框
+        function openEditModal(prodId) {
+            const p = products.find(item => item.id === prodId);
+            if (!p) return;
+
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('edit-prod-name').value = p.name;
+            document.getElementById('edit-prod-cat').value = p.category;
+            document.getElementById('edit-prod-price').value = p.price;
+            document.getElementById('edit-prod-options').value = (p.options || []).join(', ');
+            document.getElementById('edit-prod-desc').value = p.desc || '';
+
+            document.getElementById('edit-prod-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-prod-modal').classList.add('hidden');
+        }
+
+        function saveEditedProduct(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit-prod-id').value);
+            const p = products.find(item => item.id === id);
+            if (!p) return;
+
+            p.name = document.getElementById('edit-prod-name').value.trim();
+            p.category = document.getElementById('edit-prod-cat').value.trim();
+            p.price = parseFloat(document.getElementById('edit-prod-price').value);
+            const optStr = document.getElementById('edit-prod-options').value.trim();
+            p.options = optStr ? optStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+            p.desc = document.getElementById('edit-prod-desc').value.trim();
+
+            localStorage.setItem('products', JSON.stringify(products));
+            closeEditModal();
+            renderProducts();
+            renderAdminDashboard();
+            alert('✅ 商品信息修改成功！');
+        }
+
+        // Admin 功能: 彻底删除商品
+        function deleteProductPermanently(prodId) {
+            if (confirm('确定要彻底删除该商品吗？')) {
                 products = products.filter(p => p.id !== prodId);
                 localStorage.setItem('products', JSON.stringify(products));
                 renderProducts();
@@ -621,12 +746,89 @@
             }
         }
 
+        // Admin 功能: 点击用户名查看该用户所有订货/补货明细
+        function showUserDetail(customerName) {
+            const userOrders = orders.filter(o => o.customer === customerName);
+            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的补货明细`;
+            const container = document.getElementById('user-detail-content');
+            container.innerHTML = '';
+
+            if (userOrders.length === 0) {
+                container.innerHTML = `<div class="text-center py-4 text-slate-400">暂无明细</div>`;
+            } else {
+                // 汇总该用户补过的所有商品
+                const userSummaryMap = {};
+                userOrders.forEach(o => {
+                    o.items.forEach(i => {
+                        const key = i.fullName || i.name;
+                        userSummaryMap[key] = (userSummaryMap[key] || 0) + i.count;
+                    });
+                });
+
+                let summaryHtml = `<div class="bg-purple-50 p-3 rounded-xl mb-3 border border-purple-100"><div class="text-xs font-bold text-purple-700 mb-1">📦 补货总量汇总：</div>`;
+                Object.keys(userSummaryMap).forEach(k => {
+                    summaryHtml += `<div class="text-xs text-purple-900 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} 份</span></div>`;
+                });
+                summaryHtml += `</div>`;
+
+                let ordersHtml = userOrders.map(o => `
+                    <div class="border rounded-xl p-3 bg-slate-50 space-y-1">
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>单号: ${o.id}</span>
+                            <span>${o.time}</span>
+                        </div>
+                        <div class="text-sm font-medium text-slate-700">
+                            ${o.items.map(i => `${i.fullName || i.name} × ${i.count}`).join('、')}
+                        </div>
+                        <div class="text-right text-xs font-bold text-slate-800">金额: ¥${o.total}</div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = summaryHtml + `<div class="text-xs font-bold text-slate-500 mb-1">📜 历史订单记录：</div>` + ordersHtml;
+            }
+
+            document.getElementById('user-detail-modal').classList.remove('hidden');
+        }
+
+        function closeUserDetailModal() {
+            document.getElementById('user-detail-modal').classList.add('hidden');
+        }
+
+        // 渲染 Admin 数据控制台
         function renderAdminDashboard() {
             let totalOrders = orders.length;
             let totalItems = 0;
             let totalAmount = 0;
+
+            // 1. 渲染上架商品管理表格
+            const prodTableBody = document.getElementById('admin-product-management-table');
+            prodTableBody.innerHTML = '';
+            products.forEach(p => {
+                const isDis = (p.status === 'disabled');
+                const tr = document.createElement('tr');
+                tr.className = isDis ? "bg-slate-100 text-slate-400" : "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium ${isDis ? 'line-through text-slate-400' : 'text-slate-800'}">${p.name}</td>
+                    <td class="p-3">${p.category}</td>
+                    <td class="p-3">¥${p.price}</td>
+                    <td class="p-3">${(p.options && p.options.length) ? p.options.join(', ') : '-'}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 text-xs font-semibold rounded ${isDis ? 'bg-slate-200 text-slate-600' : 'bg-green-100 text-green-700'}">
+                            ${isDis ? '已下架' : '销售中'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="openEditModal(${p.id})" class="text-xs text-blue-600 hover:underline">编辑</button>
+                        <button onclick="toggleProductStatus(${p.id})" class="text-xs font-semibold ${isDis ? 'text-green-600 hover:underline' : 'text-amber-600 hover:underline'}">
+                            ${isDis ? '重新上架' : '下架'}
+                        </button>
+                        <button onclick="deleteProductPermanently(${p.id})" class="text-xs text-red-500 hover:underline">彻底删除</button>
+                    </td>
+                `;
+                prodTableBody.appendChild(tr);
+            });
             
-            // 汇总拆分：以 fullName (或 id+option) 为维度
+            // 2. 统计单项/规格订货总量
             const summaryMap = {};
 
             orders.forEach(o => {
@@ -638,7 +840,6 @@
                     if (!summaryMap[key]) {
                         const originalProd = products.find(p => p.id == i.id);
                         summaryMap[key] = {
-                            id: i.id,
                             fullName: key,
                             category: originalProd ? originalProd.category : '-',
                             price: i.price,
@@ -655,9 +856,9 @@
             document.getElementById('stat-total-items').innerText = totalItems;
             document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
 
-            // 渲染汇总表格
-            const tableBody = document.getElementById('admin-summary-table');
-            tableBody.innerHTML = '';
+            // 3. 渲染单项/规格汇总表格
+            const summaryTableBody = document.getElementById('admin-summary-table');
+            summaryTableBody.innerHTML = '';
 
             Object.values(summaryMap).forEach(item => {
                 const tr = document.createElement('tr');
@@ -667,15 +868,12 @@
                     <td class="p-3 text-slate-500">${item.category}</td>
                     <td class="p-3 text-slate-500">¥${item.price}</td>
                     <td class="p-3 font-bold text-brand-600">${item.totalCount} 份</td>
-                    <td class="p-3 text-slate-700">¥${item.totalRevenue}</td>
-                    <td class="p-3 text-right">
-                        ${item.id ? `<button onclick="deleteProduct(${item.id})" class="text-xs text-red-500 hover:underline">下架主商品</button>` : ''}
-                    </td>
+                    <td class="p-3 text-slate-700 font-semibold">¥${item.totalRevenue}</td>
                 `;
-                tableBody.appendChild(tr);
+                summaryTableBody.appendChild(tr);
             });
 
-            // 渲染订单明细
+            // 4. 渲染全员订单明细列表 (点击名字触发弹窗)
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
@@ -685,7 +883,11 @@
                 div.innerHTML = `
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="font-bold text-slate-800">${o.customer}</span>
+                            <!-- 点击名字查看补货明细 -->
+                            <button onclick="showUserDetail('${o.customer}')" class="font-bold text-brand-700 hover:text-brand-900 hover:underline flex items-center gap-1" title="点击查看该用户补货明细">
+                                👤 ${o.customer}
+                                <span class="text-[10px] bg-brand-100 text-brand-800 px-1.5 py-0.5 rounded-full font-normal">查明细</span>
+                            </button>
                             <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">${o.id}</span>
                             <span class="text-xs text-slate-400">${o.time}</span>
                         </div>
