@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线订货系统</title>
+    <title>快捷订货系统</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -26,6 +26,23 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
 
+    <!-- 0. 首次进入：用户身份登记弹窗（未登记前不可订货） -->
+    <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center">
+            <div class="inline-block p-4 bg-brand-50 rounded-full text-brand-600 mb-1">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">欢迎进入订货系统</h2>
+                <p class="text-xs text-slate-500 mt-1">请先填写您的姓名或联系方式以开始订货</p>
+            </div>
+            <form onsubmit="saveUserInfo(event)" class="space-y-4">
+                <input type="text" id="init-username-input" required placeholder="例如：张三 / 部门+名字" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-center font-medium">
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand-200">确认并开始订货</button>
+            </form>
+        </div>
+    </div>
+
     <!-- 顶部导航 -->
     <header class="bg-white shadow-sm border-b sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -33,7 +50,10 @@
                 <div class="bg-brand-600 text-white p-2 rounded-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
-                <span class="font-bold text-xl text-slate-800 tracking-tight">快捷订货系统</span>
+                <div>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
+                    <span id="current-user-badge" onclick="changeUserInfo()" class="text-xs text-brand-600 hover:underline font-medium cursor-pointer">👤 未设置身份</span>
+                </div>
             </div>
 
             <!-- 用户侧导航 -->
@@ -44,7 +64,7 @@
                 <button onclick="switchView('my-orders')" id="nav-my-orders" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100">
                     📋 我的订单
                 </button>
-                <!-- 管理员面板按钮（默认隐藏） -->
+                <!-- 管理员面板按钮（验证后显示） -->
                 <button onclick="switchView('admin')" id="nav-admin" class="hidden px-4 py-2 rounded-lg text-sm font-medium transition text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200">
                     👑 管理员控制台
                 </button>
@@ -66,19 +86,15 @@
             <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
-        <!-- 2. 用户个人订单查看界面 -->
+        <!-- 2. 用户个人订单查看界面（锁定状态，不可更改） -->
         <section id="view-my-orders" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl border shadow-sm max-w-xl mx-auto">
-                <h2 class="text-lg font-bold text-slate-800 mb-4">查询我的历史订单</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="my-name-input" placeholder="输入订货时填写的姓名/手机号" class="flex-1 px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
-                    <button onclick="queryMyOrders()" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl font-medium transition">查询</button>
-                </div>
+            <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
+                <span>🔒 提示：已提交的订单将被锁定不可修改，如需调整请联系 Admin 管理员。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
 
-        <!-- 3. 管理员鉴权弹窗 (非管理员不可看) -->
+        <!-- 3. 管理员鉴权弹窗 -->
         <section id="view-admin-login" class="hidden">
             <div class="max-w-md mx-auto my-12 bg-white p-8 rounded-2xl border shadow-md space-y-4">
                 <div class="text-center space-y-1">
@@ -86,7 +102,7 @@
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     </div>
                     <h2 class="text-xl font-bold text-slate-800">管理员身份验证</h2>
-                    <p class="text-sm text-slate-500">此区域仅限管理员查看汇总与管理后台</p>
+                    <p class="text-sm text-slate-500">此区域仅限管理员查看汇总与修改后台</p>
                 </div>
                 <form onsubmit="verifyAdmin(event)" class="space-y-4">
                     <div>
@@ -99,12 +115,12 @@
             </div>
         </section>
 
-        <!-- 4. 管理员控制台 (通过验证后渲染) -->
+        <!-- 4. 管理员控制台 -->
         <section id="view-admin" class="hidden space-y-8">
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs text-slate-500 mt-1">查看全员订货统计及单项汇总</p>
+                    <p class="text-xs text-slate-500 mt-1">查看全员订货统计及单项汇总（拥有修改/删除订单权限）</p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
@@ -125,11 +141,11 @@
                 </div>
             </div>
 
-            <!-- 单项汇总统计 (重点：看一项货订了多少) -->
+            <!-- 单项汇总统计 (重点：看每一项货订了多少件) -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800">📊 单项商品汇总统计</h3>
-                    <span class="text-xs text-slate-500">自动实时统计所有用户订货总量</span>
+                    <span class="text-xs text-slate-500">实时计算所有人订货的总总量</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -147,10 +163,10 @@
                 </div>
             </div>
 
-            <!-- 全部订单明细管理 -->
+            <!-- 全部订单明细管理 (Admin 可进行删除/改状态操作) -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
-                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表</h3>
+                    <h3 class="font-bold text-slate-800">📜 全员明细订单列表 (Admin可管理)</h3>
                 </div>
                 <div id="admin-orders-list" class="divide-y"></div>
             </div>
@@ -160,22 +176,21 @@
     <!-- 底部购物车悬浮条 -->
     <div id="cart-drawer" class="fixed bottom-0 inset-x-0 bg-white border-t shadow-2xl z-40 transform transition-transform duration-300 translate-y-full">
         <div class="max-w-6xl mx-auto px-4 py-4">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between mb-3 border-b pb-2">
                 <div class="flex items-center space-x-2">
                     <span class="font-bold text-slate-800">🛒 已选清单</span>
-                    <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空</button>
+                    <span class="text-xs text-slate-400">(未提交前可随时加减或取消)</span>
                 </div>
-                <button onclick="toggleCart(false)" class="text-slate-400 hover:text-slate-600">✕</button>
+                <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空全部</button>
             </div>
             
             <div id="cart-items" class="max-h-48 overflow-y-auto divide-y mb-4"></div>
 
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t">
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <label class="text-sm font-medium text-slate-700 whitespace-nowrap">订货人姓名/联系方式:</label>
-                    <input type="text" id="customer-name" placeholder="请输入你的名字" class="px-3 py-1.5 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none w-full sm:w-48">
+            <div class="flex items-center justify-between pt-2 border-t">
+                <div class="text-xs text-slate-500">
+                    订货人: <span id="cart-user-name" class="font-bold text-slate-700">未设置</span>
                 </div>
-                <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+                <div class="flex items-center gap-4">
                     <div class="text-right">
                         <span class="text-xs text-slate-500">合计:</span>
                         <span id="cart-total" class="text-xl font-bold text-brand-600">¥0</span>
@@ -199,9 +214,8 @@
         <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
     </footer>
 
-    <!-- JavaScript 脚本 -->
+    <!-- JavaScript 逻辑脚本 -->
     <script>
-        // 初始商品库
         const defaultProducts = [
             { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', desc: '浓郁牛肉汤，配合手打面条' },
             { id: 2, name: '日式照烧鸡腿饭', price: 25, category: '主食', desc: '嫩滑鸡肉与鲜甜照烧汁' },
@@ -211,20 +225,51 @@
             { id: 6, name: '经典薯条', price: 10, category: '零食', desc: '现炸粗薯，附赠番茄酱' }
         ];
 
-        // 默认示范订单
         const defaultOrders = [
-            { id: 'ORD-101', customer: '张三', items: [{ id: 1, name: '招牌红烧牛肉面', price: 28, count: 2 }, { id: 3, name: '冰镇柠檬红茶', price: 12, count: 1 }], total: 68, status: '已完成', time: '2026-11-03 10:15' },
-            { id: 'ORD-102', customer: '李四', items: [{ id: 2, name: '日式照烧鸡腿饭', price: 25, count: 1 }, { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, count: 2 }], total: 61, status: '处理中', time: '2026-11-03 11:40' }
+            { id: 'ORD-101', customer: '张三', items: [{ id: 1, name: '招牌红烧牛肉面', price: 28, count: 2 }, { id: 3, name: '冰镇柠檬红茶', price: 12, count: 1 }], total: 68, status: '已完成', time: '2026-11-03 10:15' }
         ];
 
-        // 本地存储初始化
         let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
         let orders = JSON.parse(localStorage.getItem('orders')) || defaultOrders;
-        let cart = {}; // { productId: count }
+        let currentUser = localStorage.getItem('currentUser') || '';
+        let cart = {}; 
         let isAdminLoggedIn = false;
-        const ADMIN_PASSWORD = "admin123"; // 默认管理员密码
+        const ADMIN_PASSWORD = "admin123";
 
-        // 视图切换控制
+        // 初始化判断身份
+        window.onload = function() {
+            if (!currentUser) {
+                document.getElementById('user-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('user-modal').classList.add('hidden');
+                updateUserBadge();
+            }
+            renderProducts();
+        };
+
+        // 保存/重置用户身份
+        function saveUserInfo(e) {
+            e.preventDefault();
+            const name = document.getElementById('init-username-input').value.trim();
+            if (name) {
+                currentUser = name;
+                localStorage.setItem('currentUser', currentUser);
+                document.getElementById('user-modal').classList.add('hidden');
+                updateUserBadge();
+            }
+        }
+
+        function changeUserInfo() {
+            document.getElementById('init-username-input').value = currentUser;
+            document.getElementById('user-modal').classList.remove('hidden');
+        }
+
+        function updateUserBadge() {
+            document.getElementById('current-user-badge').innerText = `👤 订货人: ${currentUser} (点击修改)`;
+            document.getElementById('cart-user-name').innerText = currentUser;
+        }
+
+        // 视图切换
         function switchView(view) {
             document.getElementById('view-shop').classList.add('hidden');
             document.getElementById('view-my-orders').classList.add('hidden');
@@ -240,6 +285,7 @@
             } else if (view === 'my-orders') {
                 document.getElementById('view-my-orders').classList.remove('hidden');
                 document.getElementById('nav-my-orders').className = "px-4 py-2 rounded-lg text-sm font-medium transition bg-brand-50 text-brand-700";
+                renderMyOrders();
             } else if (view === 'admin') {
                 if (isAdminLoggedIn) {
                     document.getElementById('view-admin').classList.remove('hidden');
@@ -276,7 +322,6 @@
             });
         }
 
-        // 分类筛选
         function filterCategory(cat) {
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50";
@@ -285,7 +330,7 @@
             renderProducts(cat);
         }
 
-        // 购物车管理
+        // 购物车管理：增、减、直接取消删除单项
         function addToCart(id) {
             cart[id] = (cart[id] || 0) + 1;
             updateCartUI();
@@ -297,6 +342,11 @@
                 cart[id] += delta;
                 if (cart[id] <= 0) delete cart[id];
             }
+            updateCartUI();
+        }
+
+        function removeSingleCartItem(id) {
+            delete cart[id];
             updateCartUI();
         }
 
@@ -343,6 +393,10 @@
                             <button onclick="updateCartCount(${p.id}, 1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">+</button>
                         </div>
                         <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${subtotal}</span>
+                        <!-- 允许单独取消这一项 -->
+                        <button onclick="removeSingleCartItem(${p.id})" class="text-slate-300 hover:text-red-500 p-1" title="取消这一项">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
                     </div>
                 `;
                 container.appendChild(itemRow);
@@ -359,12 +413,10 @@
             }
         }
 
-        // 提交订单
+        // 提交订单（提交后锁定不可改）
         function submitOrder() {
-            const nameInput = document.getElementById('customer-name');
-            const name = nameInput.value.trim();
-            if (!name) {
-                alert('请填写订货人姓名或联系方式！');
+            if (!currentUser) {
+                changeUserInfo();
                 return;
             }
 
@@ -373,14 +425,15 @@
                 return { id: p.id, name: p.name, price: p.price, count: cart[id] };
             });
 
-            const total = items.reduce((sum, item) => sum + item.price * item.count, 0);
+            if (items.length === 0) return;
 
+            const total = items.reduce((sum, item) => sum + item.price * item.count, 0);
             const now = new Date();
             const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
             const newOrder = {
                 id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
-                customer: name,
+                customer: currentUser,
                 items: items,
                 total: total,
                 status: '处理中',
@@ -391,33 +444,25 @@
             localStorage.setItem('orders', JSON.stringify(orders));
 
             clearCart();
-            alert('🎉 订货成功！你可以前往“我的订单”查看记录。');
-            document.getElementById('my-name-input').value = name;
+            alert('🎉 订单提交成功！已锁定并上传后台，不可再随意修改。');
             switchView('my-orders');
-            queryMyOrders();
         }
 
-        // 查询个人订单
-        function queryMyOrders() {
-            const queryName = document.getElementById('my-name-input').value.trim();
+        // 渲染当前用户的个人订单（只读，锁定）
+        function renderMyOrders() {
             const container = document.getElementById('my-orders-list');
             container.innerHTML = '';
 
-            if (!queryName) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400">请输入你的名字查询订单</div>`;
-                return;
-            }
-
-            const userOrders = orders.filter(o => o.customer.toLowerCase().includes(queryName.toLowerCase()));
+            const userOrders = orders.filter(o => o.customer === currentUser);
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400">未查询到 [${queryName}] 的订单记录</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-slate-400">暂无 [${currentUser}] 的历史订单</div>`;
                 return;
             }
 
             userOrders.forEach(o => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3";
+                card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden";
                 const itemsHtml = o.items.map(i => `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.name} × ${i.count}</span><span class="text-slate-600">¥${i.price * i.count}</span></div>`).join('');
                 
                 card.innerHTML = `
@@ -429,7 +474,10 @@
                         <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${o.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.status}</span>
                     </div>
                     <div>${itemsHtml}</div>
-                    <div class="text-right text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-xs text-slate-400">🔒 已确定提交</span>
+                        <div class="text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
+                    </div>
                 `;
                 container.appendChild(card);
             });
@@ -456,15 +504,13 @@
             switchView('shop');
         }
 
-        // 渲染管理员数据
+        // 渲染 Admin 数据与独立管理功能
         function renderAdminDashboard() {
-            // 统计总数据
             let totalOrders = orders.length;
             let totalItems = 0;
             let totalAmount = 0;
             
-            // 统计每种商品的总订购量
-            const summaryMap = {}; // { productId: { name, category, price, totalCount, totalRevenue } }
+            const summaryMap = {};
             products.forEach(p => {
                 summaryMap[p.id] = { name: p.name, category: p.category, price: p.price, totalCount: 0, totalRevenue: 0 };
             });
@@ -477,7 +523,6 @@
                         summaryMap[i.id].totalCount += i.count;
                         summaryMap[i.id].totalRevenue += i.count * i.price;
                     } else {
-                        // 防止已删除商品报错
                         summaryMap[i.id] = { name: i.name + ' (已下架)', category: '-', price: i.price, totalCount: i.count, totalRevenue: i.count * i.price };
                     }
                 });
@@ -487,7 +532,7 @@
             document.getElementById('stat-total-items').innerText = totalItems;
             document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
 
-            // 渲染单项汇总表格
+            // 单项汇总表格
             const tableBody = document.getElementById('admin-summary-table');
             tableBody.innerHTML = '';
             Object.values(summaryMap).forEach(item => {
@@ -503,7 +548,7 @@
                 tableBody.appendChild(tr);
             });
 
-            // 渲染全员订单明细
+            // 全员明细列表（Admin 可标记完成或直接删除）
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
@@ -519,10 +564,13 @@
                         </div>
                         <p class="text-xs text-slate-600 mt-1">订货明细: ${itemDesc}</p>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
                         <span class="font-bold text-slate-800">¥${o.total}</span>
                         <button onclick="toggleOrderStatus('${o.id}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-brand-50 text-brand-700 border-brand-200'}">
                             ${o.status === '已完成' ? '重置为处理中' : '标记已完成'}
+                        </button>
+                        <button onclick="adminDeleteOrder('${o.id}')" class="text-xs text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded-lg hover:bg-red-50" title="Admin删除订单">
+                            删除
                         </button>
                     </div>
                 `;
@@ -530,7 +578,7 @@
             });
         }
 
-        // 切换订单状态
+        // Admin 专属方法：修改状态与删除订单
         function toggleOrderStatus(orderId) {
             const order = orders.find(o => o.id === orderId);
             if (order) {
@@ -540,8 +588,13 @@
             }
         }
 
-        // 初始化页面
-        renderProducts();
+        function adminDeleteOrder(orderId) {
+            if (confirm(`确定要删除订单 [${orderId}] 吗？`)) {
+                orders = orders.filter(o => o.id !== orderId);
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderAdminDashboard();
+            }
+        }
     </script>
 </body>
 </html>
