@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <!-- 加入清单弹窗（已支持垂直滚动 overflow-y-auto） -->
+    <!-- 加入清单弹窗（带垂直滚动） -->
     <div id="add-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 max-h-[85vh] overflow-y-auto">
             <div>
@@ -194,7 +194,7 @@
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs text-slate-500 mt-1">按人员合并统计、商品管理、单项总计与明细控制</p>
+                    <p class="text-xs text-slate-500 mt-1">（已开启实时自动同步，无需手动刷新）</p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
@@ -376,6 +376,16 @@
         window.onload = function() {
             document.getElementById('user-modal').classList.remove('hidden');
             renderProducts();
+
+            // 方案一：自动轮询（每 3 秒自动拉取最新 localStorage 并刷新 Admin 面板）
+            setInterval(() => {
+                if (isAdminLoggedIn && !document.getElementById('view-admin').classList.contains('hidden')) {
+                    // 同步本地订单和商品数据
+                    orders = JSON.parse(localStorage.getItem('orders')) || [];
+                    products = JSON.parse(localStorage.getItem('products')) || products;
+                    renderAdminDashboard();
+                }
+            }, 3000);
         };
 
         function saveUserInfo(e) {
