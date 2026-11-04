@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快捷订货与补货系统</title>
+    <title>快捷订货与补货系统 (云端实时同步版)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -50,14 +50,10 @@
                 <h3 id="add-modal-title" class="text-lg font-bold text-slate-800">加入清单</h3>
                 <p class="text-xs text-slate-500 mt-0.5" id="add-modal-subtitle">请选择规格和补货数量</p>
             </div>
-            
-            <!-- 规格选择（如有） -->
             <div id="add-modal-options-container" class="space-y-2 hidden">
                 <label class="block text-xs font-semibold text-slate-500">选择规格/口味</label>
                 <div id="add-modal-options-list" class="space-y-1"></div>
             </div>
-
-            <!-- 数量选择器 -->
             <div class="space-y-2">
                 <label class="block text-xs font-semibold text-slate-500">补货数量</label>
                 <div class="flex items-center justify-center space-x-4 border py-2 rounded-xl bg-slate-50">
@@ -66,7 +62,6 @@
                     <button type="button" onclick="changeModalQty(1)" class="w-10 h-10 rounded-lg bg-white border font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center text-lg">+</button>
                 </div>
             </div>
-
             <div class="flex gap-2 pt-2">
                 <button type="button" onclick="closeAddModal()" class="w-1/2 border text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-slate-50">取消</button>
                 <button type="button" onclick="confirmAddToCart()" class="w-1/2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-sm shadow-md">确认放入购物车</button>
@@ -194,12 +189,11 @@
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs text-slate-500 mt-1">（已开启实时自动同步，无需手动刷新）</p>
+                    <p class="text-xs text-green-600 font-semibold mt-1">⚡ 已开启 Firebase 跨设备零延迟自动同步</p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
 
-            <!-- 数据概览 -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
                     <span class="text-xs font-semibold text-slate-400 uppercase">总订单数</span>
@@ -215,7 +209,7 @@
                 </div>
             </div>
 
-            <!-- 核心功能：按人名合并统计补货总数 -->
+            <!-- 按人名合并统计 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800">👤 按人员汇总补货记录 (同一名字自动合并)</h3>
@@ -254,7 +248,7 @@
                 </form>
             </div>
 
-            <!-- 商品上架管理 -->
+            <!-- 商品管理 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800">📦 已上架商品管理 (支持编辑与下架/恢复)</h3>
@@ -280,7 +274,6 @@
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800">📊 独立单项/规格 订货总件数统计</h3>
-                    <span class="text-xs text-slate-500">汇总所有人订购的各商品与具体规格总量</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -298,9 +291,9 @@
                 </div>
             </div>
 
-            <!-- 全员明细订单列表 -->
+            <!-- 明细订单时间线 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
+                <div class="p-4 border-b bg-slate-50">
                     <h3 class="font-bold text-slate-800">📜 全部明细订单时间线</h3>
                 </div>
                 <div id="admin-orders-list" class="divide-y"></div>
@@ -308,7 +301,7 @@
         </section>
     </main>
 
-    <!-- 弹窗式购物车 -->
+    <!-- 购物车弹窗 -->
     <div id="cart-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
         <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex items-center justify-between border-b pb-3">
@@ -319,7 +312,6 @@
                 <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
             </div>
 
-            <!-- 清单列表 -->
             <div id="cart-modal-items" class="overflow-y-auto divide-y flex-1 pr-1"></div>
 
             <div class="border-t pt-4 space-y-3">
@@ -338,31 +330,40 @@
         </div>
     </div>
 
-    <!-- 悬浮小绿车按钮 -->
     <button id="cart-trigger" onclick="toggleCartModal(true)" class="fixed bottom-6 right-6 bg-brand-600 hover:bg-brand-700 text-white p-4 rounded-full shadow-2xl z-40 flex items-center justify-center transition hover:scale-105 active:scale-95">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         <span id="cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
     </button>
 
-    <!-- 页脚管理员入口 -->
     <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-400">
         <span>© 订货与补货管理系统</span>
         <span class="mx-2">•</span>
         <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
     </footer>
 
-    <!-- JavaScript 脚本 -->
-    <script>
-        const defaultProducts = [
-            { id: 101, name: '亚发白咖啡', price: 15, category: '饮料', options: ['特濃', '原味', '炭烧'], desc: '香浓可口，传统口感', status: 'active' },
-            { id: 1, name: '招牌红烧牛肉面', price: 28, category: '主食', options: [], desc: '浓郁牛肉汤，配合手打面条', status: 'active' },
-            { id: 3, name: '冰镇柠檬红茶', price: 12, category: '饮料', options: ['正常糖', '少糖', '无糖'], desc: '手压新鲜柠檬，清凉解渴', status: 'active' },
-            { id: 5, name: '香脆炸鸡翅 (3只)', price: 18, category: '零食', options: ['原味', '辣味'], desc: '外酥里嫩，金黄香脆', status: 'active' }
-        ];
+    <!-- 引入 Firebase Web SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-        let products = JSON.parse(localStorage.getItem('products')) || defaultProducts;
-        let orders = JSON.parse(localStorage.getItem('orders')) || [];
-        
+    <script>
+        // 你在截图里生成的真实配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmhUmzA5S6Knv_4aYXKBDuAEit3LcxIoQ",
+            authDomain: "my-order-app-3b6cc.firebaseapp.com",
+            databaseURL: "https://my-order-app-3b6cc-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "my-order-app-3b6cc",
+            storageBucket: "my-order-app-3b6cc.firebasestorage.app",
+            messagingSenderId: "964558755304",
+            appId: "1:964558755304:web:0ed6cbe36e135428b7805d",
+            measurementId: "G-74WNP73SVE"
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let products = [];
+        let orders = [];
         let currentUser = ''; 
         let cart = {}; 
         
@@ -375,17 +376,30 @@
 
         window.onload = function() {
             document.getElementById('user-modal').classList.remove('hidden');
-            renderProducts();
 
-            // 方案一：自动轮询（每 3 秒自动拉取最新 localStorage 并刷新 Admin 面板）
-            setInterval(() => {
-                if (isAdminLoggedIn && !document.getElementById('view-admin').classList.contains('hidden')) {
-                    // 同步本地订单和商品数据
-                    orders = JSON.parse(localStorage.getItem('orders')) || [];
-                    products = JSON.parse(localStorage.getItem('products')) || products;
-                    renderAdminDashboard();
+            // 监听云端商品数据变化（毫秒级跨设备同步）
+            db.ref('products').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    products = Object.keys(data).map(key => ({ fbKey: key, ...data[key] }));
+                } else {
+                    products = [];
                 }
-            }, 3000);
+                renderProducts();
+                if (isAdminLoggedIn) renderAdminDashboard();
+            });
+
+            // 监听云端订单数据变化（毫秒级跨设备同步）
+            db.ref('orders').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    orders = Object.keys(data).map(key => ({ fbKey: key, ...data[key] }));
+                    orders.sort((a, b) => new Date(b.time) - new Date(a.time));
+                } else {
+                    orders = [];
+                }
+                if (isAdminLoggedIn) renderAdminDashboard();
+            });
         };
 
         function saveUserInfo(e) {
@@ -590,7 +604,7 @@
                             <button type="button" onclick="updateCartCount('${cartKey}', 1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">+</button>
                         </div>
                         <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${subtotal}</span>
-                        <button type="button" onclick="removeSingleCartItem('${cartKey}')" class="text-slate-300 hover:text-red-500 p-1" title="删除此项">
+                        <button type="button" onclick="removeSingleCartItem('${cartKey}')" class="text-slate-300 hover:text-red-500 p-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>
@@ -659,13 +673,12 @@
                 time: timeStr
             };
 
-            orders.unshift(newOrder);
-            localStorage.setItem('orders', JSON.stringify(orders));
-
-            clearCart();
-            toggleCartModal(false);
-            alert('🎉 订货/补货成功！订单已保存。');
-            switchView('my-orders');
+            db.ref('orders').push(newOrder).then(() => {
+                clearCart();
+                toggleCartModal(false);
+                alert('🎉 订货/补货成功！已实时同步至云端数据库。');
+                switchView('my-orders');
+            });
         }
 
         function renderMyOrders() {
@@ -694,7 +707,7 @@
                     </div>
                     <div>${itemsHtml}</div>
                     <div class="flex justify-between items-center pt-2">
-                        <span class="text-xs text-slate-400">🔒 已锁定 (仅Admin可修改)</span>
+                        <span class="text-xs text-slate-400">🔒 已提交 (仅Admin可修改)</span>
                         <div class="text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
                     </div>
                 `;
@@ -744,27 +757,21 @@
                 status: 'active'
             };
 
-            products.push(newProd);
-            localStorage.setItem('products', JSON.stringify(products));
-
-            document.getElementById('new-prod-name').value = '';
-            document.getElementById('new-prod-cat').value = '';
-            document.getElementById('new-prod-price').value = '';
-            document.getElementById('new-prod-options').value = '';
-            document.getElementById('new-prod-desc').value = '';
-
-            alert(`✅ 商品 [${name}] 上架成功！`);
-            renderProducts();
-            renderAdminDashboard();
+            db.ref('products').push(newProd).then(() => {
+                document.getElementById('new-prod-name').value = '';
+                document.getElementById('new-prod-cat').value = '';
+                document.getElementById('new-prod-price').value = '';
+                document.getElementById('new-prod-options').value = '';
+                document.getElementById('new-prod-desc').value = '';
+                alert(`✅ 商品 [${name}] 上架成功！多端立刻自动更新！`);
+            });
         }
 
-        function toggleProductStatus(prodId) {
+        function toggleProductStatus(prodId, fbKey) {
             const p = products.find(item => item.id === prodId);
-            if (p) {
-                p.status = (p.status === 'disabled') ? 'active' : 'disabled';
-                localStorage.setItem('products', JSON.stringify(products));
-                renderProducts();
-                renderAdminDashboard();
+            if (p && fbKey) {
+                const newStatus = (p.status === 'disabled') ? 'active' : 'disabled';
+                db.ref('products/' + fbKey).update({ status: newStatus });
             }
         }
 
@@ -790,28 +797,25 @@
             e.preventDefault();
             const id = parseInt(document.getElementById('edit-prod-id').value);
             const p = products.find(item => item.id === id);
-            if (!p) return;
+            if (!p || !p.fbKey) return;
 
-            p.name = document.getElementById('edit-prod-name').value.trim();
-            p.category = document.getElementById('edit-prod-cat').value.trim();
-            p.price = parseFloat(document.getElementById('edit-prod-price').value);
-            const optStr = document.getElementById('edit-prod-options').value.trim();
-            p.options = optStr ? optStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
-            p.desc = document.getElementById('edit-prod-desc').value.trim();
+            const updated = {
+                name: document.getElementById('edit-prod-name').value.trim(),
+                category: document.getElementById('edit-prod-cat').value.trim(),
+                price: parseFloat(document.getElementById('edit-prod-price').value),
+                options: document.getElementById('edit-prod-options').value.trim() ? document.getElementById('edit-prod-options').value.trim().split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
+                desc: document.getElementById('edit-prod-desc').value.trim()
+            };
 
-            localStorage.setItem('products', JSON.stringify(products));
-            closeEditModal();
-            renderProducts();
-            renderAdminDashboard();
-            alert('✅ 商品信息修改成功！');
+            db.ref('products/' + p.fbKey).update(updated).then(() => {
+                closeEditModal();
+                alert('✅ 修改同步成功！');
+            });
         }
 
-        function deleteProductPermanently(prodId) {
+        function deleteProductPermanently(fbKey) {
             if (confirm('确定要彻底删除该商品吗？')) {
-                products = products.filter(p => p.id !== prodId);
-                localStorage.setItem('products', JSON.stringify(products));
-                renderProducts();
-                renderAdminDashboard();
+                db.ref('products/' + fbKey).remove();
             }
         }
 
@@ -925,10 +929,10 @@
                     </td>
                     <td class="p-3 text-right space-x-2">
                         <button type="button" onclick="openEditModal(${p.id})" class="text-xs text-blue-600 hover:underline">编辑</button>
-                        <button type="button" onclick="toggleProductStatus(${p.id})" class="text-xs font-semibold ${isDis ? 'text-green-600 hover:underline' : 'text-amber-600 hover:underline'}">
+                        <button type="button" onclick="toggleProductStatus(${p.id}, '${p.fbKey}')" class="text-xs font-semibold ${isDis ? 'text-green-600 hover:underline' : 'text-amber-600 hover:underline'}">
                             ${isDis ? '重新上架' : '下架'}
                         </button>
-                        <button type="button" onclick="deleteProductPermanently(${p.id})" class="text-xs text-red-500 hover:underline">彻底删除</button>
+                        <button type="button" onclick="deleteProductPermanently('${p.fbKey}')" class="text-xs text-red-500 hover:underline">彻底删除</button>
                     </td>
                 `;
                 prodTableBody.appendChild(tr);
@@ -993,10 +997,10 @@
                     </div>
                     <div class="flex items-center space-x-3">
                         <span class="font-bold text-slate-800">¥${o.total}</span>
-                        <button type="button" onclick="toggleOrderStatus('${o.id}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-brand-50 text-brand-700 border-brand-200'}">
+                        <button type="button" onclick="toggleOrderStatus('${o.fbKey}', '${o.status}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-brand-50 text-brand-700 border-brand-200'}">
                             ${o.status === '已完成' ? '重置为处理中' : '标记已完成'}
                         </button>
-                        <button type="button" onclick="adminDeleteOrder('${o.id}')" class="text-xs text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded-lg hover:bg-red-50" title="删除订单">
+                        <button type="button" onclick="adminDeleteOrder('${o.fbKey}')" class="text-xs text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded-lg hover:bg-red-50" title="删除订单">
                             删除
                         </button>
                     </div>
@@ -1005,20 +1009,14 @@
             });
         }
 
-        function toggleOrderStatus(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = order.status === '已完成' ? '处理中' : '已完成';
-                localStorage.setItem('orders', JSON.stringify(orders));
-                renderAdminDashboard();
-            }
+        function toggleOrderStatus(fbKey, currentStatus) {
+            const nextStatus = currentStatus === '已完成' ? '处理中' : '已完成';
+            db.ref('orders/' + fbKey).update({ status: nextStatus });
         }
 
-        function adminDeleteOrder(orderId) {
-            if (confirm(`确定要删除订单 [${orderId}] 吗？`)) {
-                orders = orders.filter(o => o.id !== orderId);
-                localStorage.setItem('orders', JSON.stringify(orders));
-                renderAdminDashboard();
+        function adminDeleteOrder(fbKey) {
+            if (confirm(`确定要删除此订单吗？`)) {
+                db.ref('orders/' + fbKey).remove();
             }
         }
     </script>
