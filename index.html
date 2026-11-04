@@ -100,7 +100,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">分类</label>
-                    <input type="text" id="edit-prod-cat" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <select id="edit-prod-cat" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-white focus:ring-2 focus:ring-purple-500"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">单价 (元)</label>
@@ -153,12 +153,7 @@
 
         <!-- 1. 用户订货界面 -->
         <section id="view-shop" class="block space-y-6">
-            <div class="flex flex-wrap gap-2 pb-2" id="category-filter-bar">
-                <button onclick="filterCategory('all')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium text-white shadow-sm" style="background-color: #06b6c4;">全部商品</button>
-                <button onclick="filterCategory('饮料')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🥤 咖啡饮品</button>
-                <button onclick="filterCategory('主食')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🍱 主食餐点</button>
-                <button onclick="filterCategory('零食')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50">🍿 休闲零食</button>
-            </div>
+            <div class="flex flex-wrap gap-2 pb-2" id="category-filter-bar"></div>
 
             <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
@@ -217,6 +212,35 @@
                 </div>
             </div>
 
+            <!-- 分类管理模块 -->
+            <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <span class="bg-cyan-100 text-cyan-800 p-1.5 rounded-lg text-xs">🏷️</span>
+                    商品分类管理 (可添加或移除)
+                </h3>
+                <form onsubmit="addNewCategory(event)" class="flex gap-2 max-w-md">
+                    <input type="text" id="new-cat-input" required placeholder="新分类名称 (如: 饮料)" class="flex-1 px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-cyan-500">
+                    <button type="submit" class="text-white font-bold px-4 py-2 rounded-xl text-sm transition shadow" style="background-color: #06b6c4;">添加分类</button>
+                </form>
+                <div id="admin-category-tags" class="flex flex-wrap gap-2 pt-2"></div>
+            </div>
+
+            <!-- 上架新商品表单 -->
+            <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <span class="bg-purple-100 text-purple-600 p-1.5 rounded-lg text-xs">➕</span>
+                    上架新商品
+                </h3>
+                <form onsubmit="addNewProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <input type="text" id="new-prod-name" required placeholder="商品名称 (如: 亚发白咖啡)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <select id="new-prod-cat" required class="px-3 py-2 border rounded-xl text-sm outline-none bg-white focus:ring-2 focus:ring-purple-500"></select>
+                    <input type="number" step="0.01" id="new-prod-price" required placeholder="价格 (元)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <input type="text" id="new-prod-options" placeholder="规格/选项 (用逗号隔开，如: 特濃,原味,炭烧)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 sm:col-span-2">
+                    <input type="text" id="new-prod-desc" placeholder="简短描述 (选填)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <button type="submit" class="sm:col-span-2 lg:col-span-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm transition">上架该商品</button>
+                </form>
+            </div>
+
             <!-- 按人名合并统计 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
@@ -238,22 +262,6 @@
                         <tbody id="admin-user-summary-table" class="divide-y"></tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- 上架新商品表单 -->
-            <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
-                <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                    <span class="bg-purple-100 text-purple-600 p-1.5 rounded-lg text-xs">➕</span>
-                    上架新商品
-                </h3>
-                <form onsubmit="addNewProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <input type="text" id="new-prod-name" required placeholder="商品名称 (如: 亚发白咖啡)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="text" id="new-prod-cat" required placeholder="分类 (如: 饮料/主食)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="number" step="0.01" id="new-prod-price" required placeholder="价格 (元)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <input type="text" id="new-prod-options" placeholder="规格/选项 (用逗号隔开，如: 特濃,原味,炭烧)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 sm:col-span-2">
-                    <input type="text" id="new-prod-desc" placeholder="简短描述 (选填)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <button type="submit" class="sm:col-span-2 lg:col-span-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm transition">上架该商品</button>
-                </form>
             </div>
 
             <!-- 商品管理 -->
@@ -373,6 +381,8 @@
         const db = firebase.database();
 
         let products = [];
+        let categories = ["饮料", "主食", "零食"]; // 默认分类
+        let currentFilterCategory = 'all';
         let orders = [];
         let currentUser = ''; 
         let cart = {}; 
@@ -384,7 +394,6 @@
         let isAdminLoggedIn = false;
         const ADMIN_PASSWORD = "admin123";
 
-        // 统一金额格式化函数（保留 2 位小数 + 千分位逗号）
         function formatMoney(num) {
             const val = parseFloat(num) || 0;
             return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -393,6 +402,20 @@
         window.onload = function() {
             document.getElementById('user-modal').classList.remove('hidden');
 
+            // 监听分类数据
+            db.ref('categories').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    categories = Object.values(data);
+                } else {
+                    categories = ["饮料", "主食", "零食"];
+                }
+                renderCategoryBar();
+                renderCategorySelects();
+                if (isAdminLoggedIn) renderAdminCategories();
+            });
+
+            // 监听商品数据
             db.ref('products').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -400,10 +423,11 @@
                 } else {
                     products = [];
                 }
-                renderProducts();
+                renderProducts(currentFilterCategory);
                 if (isAdminLoggedIn) renderAdminDashboard();
             });
 
+            // 监听订单数据
             db.ref('orders').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -453,6 +477,10 @@
 
             document.getElementById('nav-shop').className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
             document.getElementById('nav-my-orders').className = "px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100";
+            document.getElementById('nav-shop').style.backgroundColor = '';
+            document.getElementById('nav-shop').style.color = '';
+            document.getElementById('nav-my-orders').style.backgroundColor = '';
+            document.getElementById('nav-my-orders').style.color = '';
             
             if (view === 'shop') {
                 document.getElementById('view-shop').classList.remove('hidden');
@@ -471,6 +499,33 @@
                     document.getElementById('view-admin-login').classList.remove('hidden');
                 }
             }
+        }
+
+        // 渲染前端分类按钮条
+        function renderCategoryBar() {
+            const bar = document.getElementById('category-filter-bar');
+            let html = `<button onclick="filterCategory('all')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium ${currentFilterCategory === 'all' ? 'text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-50'}" ${currentFilterCategory === 'all' ? 'style="background-color: #06b6c4;"' : ''}>全部商品</button>`;
+            
+            categories.forEach(cat => {
+                const isActive = currentFilterCategory === cat;
+                html += `<button onclick="filterCategory('${cat}')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium ${isActive ? 'text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-50'}" ${isActive ? 'style="background-color: #06b6c4;"' : ''}>${cat}</button>`;
+            });
+            bar.innerHTML = html;
+        }
+
+        // 渲染表单中的分类下拉框
+        function renderCategorySelects() {
+            const newProdSelect = document.getElementById('new-prod-cat');
+            const editProdSelect = document.getElementById('edit-prod-cat');
+            let opts = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            if(newProdSelect) newProdSelect.innerHTML = opts;
+            if(editProdSelect) editProdSelect.innerHTML = opts;
+        }
+
+        function filterCategory(cat) {
+            currentFilterCategory = cat;
+            renderCategoryBar();
+            renderProducts(cat);
         }
 
         function renderProducts(category = 'all') {
@@ -510,15 +565,6 @@
                 `;
                 grid.appendChild(card);
             });
-        }
-
-        function filterCategory(cat) {
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-white border text-slate-600 hover:bg-slate-50";
-            });
-            event.target.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium text-white shadow-sm";
-            event.target.style.backgroundColor = '#06b6c4';
-            renderProducts(cat);
         }
 
         function openAddModal(prodId) {
@@ -765,10 +811,52 @@
             switchView('shop');
         }
 
+        // 添加新分类
+        function addNewCategory(e) {
+            e.preventDefault();
+            const input = document.getElementById('new-cat-input');
+            const catName = input.value.trim();
+            if(!catName) return;
+            if(categories.includes(catName)) {
+                alert('该分类已存在！');
+                return;
+            }
+            categories.push(catName);
+            db.ref('categories').set(categories).then(() => {
+                input.value = '';
+            });
+        }
+
+        // 删除分类
+        function deleteCategory(catName) {
+            if(categories.length <= 1) {
+                alert('至少需要保留一个分类！');
+                return;
+            }
+            if(confirm(`确定要删除分类 [${catName}] 吗？`)) {
+                categories = categories.filter(c => c !== catName);
+                db.ref('categories').set(categories).then(() => {
+                    if(currentFilterCategory === catName) currentFilterCategory = 'all';
+                });
+            }
+        }
+
+        // 渲染后台分类管理标签
+        function renderAdminCategories() {
+            const container = document.getElementById('admin-category-tags');
+            if(!container) return;
+            container.innerHTML = categories.map(cat => `
+                <div class="flex items-center gap-2 bg-cyan-50 border border-cyan-200 text-cyan-900 px-3 py-1.5 rounded-xl text-sm font-medium">
+                    <span>📁 ${cat}</span>
+                    <button type="button" onclick="deleteCategory('${cat}')" class="text-red-500 hover:text-red-700 font-bold ml-1">✕</button>
+                </div>
+            `).join('');
+        }
+
         function addNewProduct(e) {
             e.preventDefault();
             const name = document.getElementById('new-prod-name').value.trim();
-            const category = document.getElementById('new-prod-cat').value.trim();
+            const category = document.getElementById('new-prod-cat').value;
             const price = parseFloat(document.getElementById('new-prod-price').value);
             const optionsStr = document.getElementById('new-prod-options').value.trim();
             const desc = document.getElementById('new-prod-desc').value.trim();
@@ -789,7 +877,6 @@
 
             db.ref('products').push(newProd).then(() => {
                 document.getElementById('new-prod-name').value = '';
-                document.getElementById('new-prod-cat').value = '';
                 document.getElementById('new-prod-price').value = '';
                 document.getElementById('new-prod-options').value = '';
                 document.getElementById('new-prod-desc').value = '';
@@ -830,7 +917,7 @@
 
             const updated = {
                 name: document.getElementById('edit-prod-name').value.trim(),
-                category: document.getElementById('edit-prod-cat').value.trim(),
+                category: document.getElementById('edit-prod-cat').value,
                 price: parseFloat(document.getElementById('edit-prod-price').value),
                 options: document.getElementById('edit-prod-options').value.trim() ? document.getElementById('edit-prod-options').value.trim().split(/[,，]/).map(s => s.trim()).filter(Boolean) : [],
                 desc: document.getElementById('edit-prod-desc').value.trim()
@@ -938,6 +1025,8 @@
             document.getElementById('stat-total-orders').innerText = totalOrders;
             document.getElementById('stat-total-items').innerText = totalItems;
             document.getElementById('stat-total-amount').innerText = `¥${formatMoney(totalAmount)}`;
+
+            renderAdminCategories();
 
             const userSummaryTableBody = document.getElementById('admin-user-summary-table');
             userSummaryTableBody.innerHTML = '';
