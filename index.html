@@ -9,13 +9,15 @@
     <meta name="googlebot" content="noindex, nofollow">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS CDN (用于直接将表格数据导出为真正的 Excel .xlsx 文件) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            50: '#f0fdf4',
+                            50: '#0cd8eb',
                             100: '#dcfce7',
                             500: '#22c55e',
                             600: '#16a34a',
@@ -199,7 +201,7 @@
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
 
-            <!-- 统计指标（仅计算待处理/未完成） -->
+            <!-- 统计指标（仅计算待处理/未完成，且金额含两位小数） -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
                     <span class="text-xs font-semibold text-slate-400 uppercase">待处理订单数</span>
@@ -211,7 +213,7 @@
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
                     <span class="text-xs font-semibold text-slate-400 uppercase">待处理总金额</span>
-                    <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0</div>
+                    <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0.00</div>
                 </div>
             </div>
 
@@ -276,13 +278,16 @@
                 </div>
             </div>
 
-            <!-- 单项汇总统计（仅计算未完成） -->
+            <!-- 单项汇总统计（带 Excel 导出功能） -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
                     <h3 class="font-bold text-slate-800">📊 独立单项/规格 待补货总件数统计 (已排除已完成订单)</h3>
+                    <button type="button" onclick="exportSummaryToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1">
+                        <span>📥</span> 导出为 Excel
+                    </button>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
+                    <table id="summary-excel-table" class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                             <tr>
                                 <th class="p-3">商品及规格</th>
@@ -325,7 +330,7 @@
                     <span class="text-slate-500">订货人: <strong id="cart-modal-user" class="text-slate-800">未输入</strong></span>
                     <div>
                         <span class="text-xs text-slate-500">合计:</span>
-                        <span id="cart-modal-total" class="text-2xl font-black text-brand-600 ml-1">¥0</span>
+                        <span id="cart-modal-total" class="text-2xl font-black text-brand-600 ml-1">¥0.00</span>
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -379,10 +384,15 @@
         let isAdminLoggedIn = false;
         const ADMIN_PASSWORD = "admin123";
 
+        // 统一金额格式化函数（保留 2 位小数）
+        function formatMoney(num) {
+            return (parseFloat(num) || 0).toFixed(2);
+        }
+
         window.onload = function() {
             document.getElementById('user-modal').classList.remove('hidden');
 
-            // 监听云端商品数据变化（毫秒级跨设备同步）
+            // 监听云端商品数据变化
             db.ref('products').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -394,7 +404,7 @@
                 if (isAdminLoggedIn) renderAdminDashboard();
             });
 
-            // 监听云端订单数据变化（毫秒级跨设备同步）
+            // 监听云端订单数据变化
             db.ref('orders').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
@@ -493,7 +503,7 @@
                         ${optionTags}
                     </div>
                     <div class="flex items-center justify-between pt-4 border-t mt-4">
-                        <span class="text-lg font-black text-brand-600">¥${p.price}</span>
+                        <span class="text-lg font-black text-brand-600">¥${formatMoney(p.price)}</span>
                         <button type="button" onclick="openAddModal(${p.id})" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-1.5 rounded-xl text-sm font-medium transition shadow-sm">+ 加入清单</button>
                     </div>
                 `;
@@ -592,7 +602,7 @@
 
             if (Object.keys(cart).length === 0) {
                 container.innerHTML = `<div class="text-center py-8 text-slate-400">购物车空空如也</div>`;
-                document.getElementById('cart-modal-total').innerText = '¥0';
+                document.getElementById('cart-modal-total').innerText = '¥0.00';
                 return;
             }
 
@@ -614,7 +624,7 @@
                 itemRow.innerHTML = `
                     <div class="flex-1">
                         <div class="font-medium text-sm text-slate-800">${displayName}</div>
-                        <div class="text-xs text-slate-400">¥${p.price} / 份</div>
+                        <div class="text-xs text-slate-400">¥${formatMoney(p.price)} / 份</div>
                     </div>
                     <div class="flex items-center space-x-3">
                         <div class="flex items-center border rounded-lg overflow-hidden">
@@ -622,7 +632,7 @@
                             <span class="px-3 py-0.5 text-xs font-semibold">${count}</span>
                             <button type="button" onclick="updateCartCount('${cartKey}', 1)" class="px-2 py-0.5 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold">+</button>
                         </div>
-                        <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${subtotal}</span>
+                        <span class="font-bold text-sm text-slate-700 w-16 text-right">¥${formatMoney(subtotal)}</span>
                         <button type="button" onclick="removeSingleCartItem('${cartKey}')" class="text-slate-300 hover:text-red-500 p-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
@@ -631,7 +641,7 @@
                 container.appendChild(itemRow);
             });
 
-            document.getElementById('cart-modal-total').innerText = `¥${total}`;
+            document.getElementById('cart-modal-total').innerText = `¥${formatMoney(total)}`;
         }
 
         function updateCartCount(cartKey, delta) {
@@ -713,7 +723,7 @@
             userOrders.forEach(o => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden";
-                const itemsHtml = o.items.map(i => `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × ${i.count}</span><span class="text-slate-600">¥${i.price * i.count}</span></div>`).join('');
+                const itemsHtml = o.items.map(i => `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × ${i.count}</span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`).join('');
                 
                 card.innerHTML = `
                     <div class="flex justify-between items-center pb-2 border-b">
@@ -726,7 +736,7 @@
                     <div>${itemsHtml}</div>
                     <div class="flex justify-between items-center pt-2">
                         <span class="text-xs text-slate-400">🔒 已提交 (仅Admin可修改)</span>
-                        <div class="text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${o.total}</span></div>
+                        <div class="text-sm font-bold text-slate-800">总计: <span class="text-brand-600 text-base">¥${formatMoney(o.total)}</span></div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -836,7 +846,6 @@
         }
 
         function showUserDetail(customerName) {
-            // 仅查询待处理订单
             const userOrders = orders.filter(o => o.customer === customerName && o.status !== '已完成');
             document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的待补货详情`;
             const container = document.getElementById('user-detail-content');
@@ -868,7 +877,7 @@
                         <div class="text-sm font-medium text-slate-700">
                             ${o.items.map(i => `${i.fullName || i.name} × ${i.count}`).join('、')}
                         </div>
-                        <div class="text-right text-xs font-bold text-slate-800">金额: ¥${o.total}</div>
+                        <div class="text-right text-xs font-bold text-slate-800">金额: ¥${formatMoney(o.total)}</div>
                     </div>
                 `).join('');
 
@@ -891,7 +900,6 @@
             const summaryMap = {};
 
             orders.forEach(o => {
-                // 关键逻辑：如果订单已标记完成，不参与统计结算！
                 if (o.status === '已完成') return;
 
                 totalOrders += 1;
@@ -909,7 +917,6 @@
                     userAggregatedMap[name].totalItems += i.count;
                     userAggregatedMap[name].itemKinds.add(i.fullName || i.name);
 
-                    // 单项统计
                     const key = i.fullName || i.name;
                     if (!summaryMap[key]) {
                         const originalProd = products.find(p => p.id == i.id);
@@ -926,10 +933,10 @@
                 });
             });
 
-            // 更新顶部指标栏
+            // 更新顶部指标栏（金额格式化为 2 位小数）
             document.getElementById('stat-total-orders').innerText = totalOrders;
             document.getElementById('stat-total-items').innerText = totalItems;
-            document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
+            document.getElementById('stat-total-amount').innerText = `¥${formatMoney(totalAmount)}`;
 
             // 人员待补货汇总表
             const userSummaryTableBody = document.getElementById('admin-user-summary-table');
@@ -947,7 +954,7 @@
                         <td class="p-3 text-slate-500">${data.orderCount} 次</td>
                         <td class="p-3 text-slate-500">${data.itemKinds.size} 种</td>
                         <td class="p-3 font-bold text-brand-600">${data.totalItems} 份</td>
-                        <td class="p-3 font-bold text-purple-700">¥${data.totalSpent}</td>
+                        <td class="p-3 font-bold text-purple-700">¥${formatMoney(data.totalSpent)}</td>
                         <td class="p-3 text-right">
                             <button type="button" onclick="showUserDetail('${name}')" class="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-lg font-medium hover:bg-purple-100">
                                 查看具体补了什么货
@@ -968,7 +975,7 @@
                 tr.innerHTML = `
                     <td class="p-3 font-medium ${isDis ? 'line-through text-slate-400' : 'text-slate-800'}">${p.name}</td>
                     <td class="p-3">${p.category}</td>
-                    <td class="p-3">¥${p.price}</td>
+                    <td class="p-3">¥${formatMoney(p.price)}</td>
                     <td class="p-3">${(p.options && p.options.length) ? p.options.join(', ') : '-'}</td>
                     <td class="p-3">
                         <span class="px-2 py-0.5 text-xs font-semibold rounded ${isDis ? 'bg-slate-200 text-slate-600' : 'bg-green-100 text-green-700'}">
@@ -999,15 +1006,15 @@
                     tr.innerHTML = `
                         <td class="p-3 font-medium text-slate-800">${item.fullName}</td>
                         <td class="p-3 text-slate-500">${item.category}</td>
-                        <td class="p-3 text-slate-500">¥${item.price}</td>
+                        <td class="p-3 text-slate-500">¥${formatMoney(item.price)}</td>
                         <td class="p-3 font-bold text-brand-600">${item.totalCount} 份</td>
-                        <td class="p-3 text-slate-700 font-semibold">¥${item.totalRevenue}</td>
+                        <td class="p-3 text-slate-700 font-semibold">¥${formatMoney(item.totalRevenue)}</td>
                     `;
                     summaryTableBody.appendChild(tr);
                 });
             }
 
-            // 全部订单时间线（保持原样展示所有历史单据）
+            // 全部订单时间线
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
@@ -1024,7 +1031,7 @@
                         <p class="text-xs text-slate-600 mt-1">订货明细: ${itemDesc}</p>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <span class="font-bold text-slate-800">¥${o.total}</span>
+                        <span class="font-bold text-slate-800">¥${formatMoney(o.total)}</span>
                         <button type="button" onclick="toggleOrderStatus('${o.fbKey}', '${o.status}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-brand-50 text-brand-700 border-brand-200'}">
                             ${o.status === '已完成' ? '重置为处理中' : '标记已完成'}
                         </button>
@@ -1046,6 +1053,14 @@
             if (confirm(`确定要删除此订单吗？`)) {
                 db.ref('orders/' + fbKey).remove();
             }
+        }
+
+        // 导出“独立单项待补货统计”为 Excel (.xlsx) 文件
+        function exportSummaryToExcel() {
+            const table = document.getElementById('summary-excel-table');
+            const wb = XLSX.utils.table_to_book(table, { sheet: "待补货汇总" });
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `待补货总件数统计_${today}.xlsx`);
         }
     </script>
 </body>
