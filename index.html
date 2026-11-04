@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>快捷订货与补货系统 (云端实时同步版)</title>
+    <!-- 防搜索引擎抓取 -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -196,36 +199,37 @@
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
 
+            <!-- 统计指标（仅计算待处理/未完成） -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">总订单数</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待处理订单数</span>
                     <div id="stat-total-orders" class="text-3xl font-black text-slate-800 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">订货总件数</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待补货总件数</span>
                     <div id="stat-total-items" class="text-3xl font-black text-brand-600 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span class="text-xs font-semibold text-slate-400 uppercase">总金额</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待处理总金额</span>
                     <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0</div>
                 </div>
             </div>
 
-            <!-- 按人名合并统计 -->
+            <!-- 按人名合并统计（仅计算未完成） -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">👤 按人员汇总补货记录 (同一名字自动合并)</h3>
-                    <span class="text-xs text-slate-500">点击人员姓名可展开查看该人累积补货详情</span>
+                    <h3 class="font-bold text-slate-800">👤 按人员汇总待补货记录 (仅未完成订单，已完成自动扣除)</h3>
+                    <span class="text-xs text-slate-500">点击人员姓名可展开查看该人待补货详情</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                             <tr>
                                 <th class="p-3">订货人姓名</th>
-                                <th class="p-3">下订单次数</th>
-                                <th class="p-3">累积补货种数</th>
-                                <th class="p-3 font-bold text-brand-700">累积补货总件数</th>
-                                <th class="p-3 font-bold text-purple-700">总花费金额</th>
+                                <th class="p-3">未完成次数</th>
+                                <th class="p-3">待补货种数</th>
+                                <th class="p-3 font-bold text-brand-700">待补货总件数</th>
+                                <th class="p-3 font-bold text-purple-700">待处理总金额</th>
                                 <th class="p-3 text-right">操作</th>
                             </tr>
                         </thead>
@@ -272,10 +276,10 @@
                 </div>
             </div>
 
-            <!-- 单项汇总统计 -->
+            <!-- 单项汇总统计（仅计算未完成） -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 class="font-bold text-slate-800">📊 独立单项/规格 订货总件数统计</h3>
+                    <h3 class="font-bold text-slate-800">📊 独立单项/规格 待补货总件数统计 (已排除已完成订单)</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
@@ -284,8 +288,8 @@
                                 <th class="p-3">商品及规格</th>
                                 <th class="p-3">分类</th>
                                 <th class="p-3">单价</th>
-                                <th class="p-3 text-brand-700 font-bold">已订总数量</th>
-                                <th class="p-3">小计总金额</th>
+                                <th class="p-3 text-brand-700 font-bold">待补货数量</th>
+                                <th class="p-3">待处理金额</th>
                             </tr>
                         </thead>
                         <tbody id="admin-summary-table" class="divide-y"></tbody>
@@ -405,7 +409,6 @@
 
         function formatUserNoInput(input) {
             let val = input.value;
-            // 确保强制以 NO 开头，且后面只能输入数字
             if (!val.toUpperCase().startsWith('NO')) {
                 val = 'NO' + val.replace(/[^0-9]/g, '');
             } else {
@@ -419,7 +422,6 @@
         function saveUserInfo(e) {
             e.preventDefault();
             const inputVal = document.getElementById('init-username-input').value.trim().toUpperCase();
-            // 验证必须包含 NO 后面有数字
             if (inputVal.length > 2 && /^NO\d+$/.test(inputVal)) {
                 currentUser = inputVal;
                 document.getElementById('user-modal').classList.add('hidden');
@@ -834,13 +836,14 @@
         }
 
         function showUserDetail(customerName) {
-            const userOrders = orders.filter(o => o.customer === customerName);
-            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的累计补货详情`;
+            // 仅查询待处理订单
+            const userOrders = orders.filter(o => o.customer === customerName && o.status !== '已完成');
+            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的待补货详情`;
             const container = document.getElementById('user-detail-content');
             container.innerHTML = '';
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-slate-400">暂无明细</div>`;
+                container.innerHTML = `<div class="text-center py-4 text-slate-400">该用户目前暂无待补货记录</div>`;
             } else {
                 const userSummaryMap = {};
                 userOrders.forEach(o => {
@@ -850,7 +853,7 @@
                     });
                 });
 
-                let summaryHtml = `<div class="bg-purple-50 p-3 rounded-xl mb-3 border border-purple-100"><div class="text-xs font-bold text-purple-700 mb-1">📦 累积补货总量汇总：</div>`;
+                let summaryHtml = `<div class="bg-purple-50 p-3 rounded-xl mb-3 border border-purple-100"><div class="text-xs font-bold text-purple-700 mb-1">📦 待补货总量汇总：</div>`;
                 Object.keys(userSummaryMap).forEach(k => {
                     summaryHtml += `<div class="text-xs text-purple-900 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} 份</span></div>`;
                 });
@@ -869,7 +872,7 @@
                     </div>
                 `).join('');
 
-                container.innerHTML = summaryHtml + `<div class="text-xs font-bold text-slate-500 mb-1">📜 历史订单记录：</div>` + ordersHtml;
+                container.innerHTML = summaryHtml + `<div class="text-xs font-bold text-slate-500 mb-1">📜 待处理订单：</div>` + ordersHtml;
             }
 
             document.getElementById('user-detail-modal').classList.remove('hidden');
@@ -880,12 +883,20 @@
         }
 
         function renderAdminDashboard() {
-            let totalOrders = orders.length;
+            let totalOrders = 0;
             let totalItems = 0;
             let totalAmount = 0;
 
             const userAggregatedMap = {};
+            const summaryMap = {};
+
             orders.forEach(o => {
+                // 关键逻辑：如果订单已标记完成，不参与统计结算！
+                if (o.status === '已完成') return;
+
+                totalOrders += 1;
+                totalAmount += o.total;
+
                 const name = o.customer;
                 if (!userAggregatedMap[name]) {
                     userAggregatedMap[name] = { orderCount: 0, totalItems: 0, totalSpent: 0, itemKinds: new Set() };
@@ -894,16 +905,38 @@
                 userAggregatedMap[name].totalSpent += o.total;
 
                 o.items.forEach(i => {
+                    totalItems += i.count;
                     userAggregatedMap[name].totalItems += i.count;
                     userAggregatedMap[name].itemKinds.add(i.fullName || i.name);
+
+                    // 单项统计
+                    const key = i.fullName || i.name;
+                    if (!summaryMap[key]) {
+                        const originalProd = products.find(p => p.id == i.id);
+                        summaryMap[key] = {
+                            fullName: key,
+                            category: originalProd ? originalProd.category : '-',
+                            price: i.price,
+                            totalCount: 0,
+                            totalRevenue: 0
+                        };
+                    }
+                    summaryMap[key].totalCount += i.count;
+                    summaryMap[key].totalRevenue += i.count * i.price;
                 });
             });
 
+            // 更新顶部指标栏
+            document.getElementById('stat-total-orders').innerText = totalOrders;
+            document.getElementById('stat-total-items').innerText = totalItems;
+            document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
+
+            // 人员待补货汇总表
             const userSummaryTableBody = document.getElementById('admin-user-summary-table');
             userSummaryTableBody.innerHTML = '';
 
             if (Object.keys(userAggregatedMap).length === 0) {
-                userSummaryTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">暂无任何订货记录</td></tr>`;
+                userSummaryTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">当前没有未完成的待处理订单</td></tr>`;
             } else {
                 Object.keys(userAggregatedMap).forEach(name => {
                     const data = userAggregatedMap[name];
@@ -925,6 +958,7 @@
                 });
             }
 
+            // 商品管理表格
             const prodTableBody = document.getElementById('admin-product-management-table');
             prodTableBody.innerHTML = '';
             products.forEach(p => {
@@ -951,49 +985,29 @@
                 `;
                 prodTableBody.appendChild(tr);
             });
-            
-            const summaryMap = {};
-            orders.forEach(o => {
-                totalAmount += o.total;
-                o.items.forEach(i => {
-                    totalItems += i.count;
-                    const key = i.fullName || i.name;
-                    
-                    if (!summaryMap[key]) {
-                        const originalProd = products.find(p => p.id == i.id);
-                        summaryMap[key] = {
-                            fullName: key,
-                            category: originalProd ? originalProd.category : '-',
-                            price: i.price,
-                            totalCount: 0,
-                            totalRevenue: 0
-                        };
-                    }
-                    summaryMap[key].totalCount += i.count;
-                    summaryMap[key].totalRevenue += i.count * i.price;
-                });
-            });
 
-            document.getElementById('stat-total-orders').innerText = totalOrders;
-            document.getElementById('stat-total-items').innerText = totalItems;
-            document.getElementById('stat-total-amount').innerText = `¥${totalAmount}`;
-
+            // 独立单项统计表
             const summaryTableBody = document.getElementById('admin-summary-table');
             summaryTableBody.innerHTML = '';
 
-            Object.values(summaryMap).forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="p-3 font-medium text-slate-800">${item.fullName}</td>
-                    <td class="p-3 text-slate-500">${item.category}</td>
-                    <td class="p-3 text-slate-500">¥${item.price}</td>
-                    <td class="p-3 font-bold text-brand-600">${item.totalCount} 份</td>
-                    <td class="p-3 text-slate-700 font-semibold">¥${item.totalRevenue}</td>
-                `;
-                summaryTableBody.appendChild(tr);
-            });
+            if (Object.keys(summaryMap).length === 0) {
+                summaryTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">无待补货数据</td></tr>`;
+            } else {
+                Object.values(summaryMap).forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-3 font-medium text-slate-800">${item.fullName}</td>
+                        <td class="p-3 text-slate-500">${item.category}</td>
+                        <td class="p-3 text-slate-500">¥${item.price}</td>
+                        <td class="p-3 font-bold text-brand-600">${item.totalCount} 份</td>
+                        <td class="p-3 text-slate-700 font-semibold">¥${item.totalRevenue}</td>
+                    `;
+                    summaryTableBody.appendChild(tr);
+                });
+            }
 
+            // 全部订单时间线（保持原样展示所有历史单据）
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
