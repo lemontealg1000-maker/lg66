@@ -34,10 +34,12 @@
             </div>
             <div>
                 <h2 class="text-xl font-bold text-slate-800">欢迎进入订货系统</h2>
-                <p class="text-xs text-slate-500 mt-1">请输入您的姓名或联系方式以开始订货</p>
+                <p class="text-xs text-slate-500 mt-1">请输入编号数字以开始订货</p>
             </div>
             <form onsubmit="saveUserInfo(event)" class="space-y-4">
-                <input type="text" id="init-username-input" required placeholder="例如：张三 / 部门+名字" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-center font-medium">
+                <div class="relative flex items-center">
+                    <input type="text" id="init-username-input" required value="NO" oninput="formatUserNoInput(this)" placeholder="NO1" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-center font-bold text-lg tracking-wider">
+                </div>
                 <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand-200">确认并进入</button>
             </form>
         </div>
@@ -401,13 +403,29 @@
             });
         };
 
+        function formatUserNoInput(input) {
+            let val = input.value;
+            // 确保强制以 NO 开头，且后面只能输入数字
+            if (!val.toUpperCase().startsWith('NO')) {
+                val = 'NO' + val.replace(/[^0-9]/g, '');
+            } else {
+                let prefix = val.substring(0, 2);
+                let numbers = val.substring(2).replace(/[^0-9]/g, '');
+                val = prefix + numbers;
+            }
+            input.value = val.toUpperCase();
+        }
+
         function saveUserInfo(e) {
             e.preventDefault();
-            const name = document.getElementById('init-username-input').value.trim();
-            if (name) {
-                currentUser = name;
+            const inputVal = document.getElementById('init-username-input').value.trim().toUpperCase();
+            // 验证必须包含 NO 后面有数字
+            if (inputVal.length > 2 && /^NO\d+$/.test(inputVal)) {
+                currentUser = inputVal;
                 document.getElementById('user-modal').classList.add('hidden');
                 updateUserBadge();
+            } else {
+                alert('请输入正确的编号，例如 NO1');
             }
         }
 
