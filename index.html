@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快捷订货与补货系统 (云端实时同步版)</title>
+    <title>柠檬茶</title>
     <!-- 防搜索引擎抓取 -->
     <meta name="robots" content="noindex, nofollow">
     <meta name="googlebot" content="noindex, nofollow">
@@ -130,7 +130,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
                 <div>
-                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">订货系统</span>
                     <span id="current-user-badge" class="text-xs text-slate-500 font-medium">👤 未登录</span>
                 </div>
             </div>
@@ -161,7 +161,7 @@
         <!-- 2. 用户个人订单 -->
         <section id="view-my-orders" class="hidden space-y-6">
             <div class="bg-cyan-50 border border-cyan-200 text-cyan-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
-                <span>🔒 提示：已提交的订单将被锁定不可修改，若因库存不足管理员调整了数量，将会实时同步显示原数量与调整后数量。</span>
+                <span>🔒 提示：已提交的订单将被锁定不可修改。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
@@ -178,7 +178,7 @@
                 <form onsubmit="verifyAdmin(event)" class="space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">管理员密码</label>
-                        <input type="password" id="admin-pass-input" placeholder="请输入密码 (默认: admin123)" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+                        <input type="password" id="admin-pass-input" placeholder="请输入密码" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
                     </div>
                     <div id="admin-error-msg" class="text-red-500 text-xs hidden">密码错误，请重新输入！</div>
                     <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition">进入后台</button>
@@ -191,7 +191,7 @@
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
-                    <p class="text-xs font-semibold mt-1" style="color: #06b6c4;">⚡ 已开启 Firebase 跨设备零延迟自动同步</p>
+                    <p class="text-xs font-semibold mt-1" style="color: #06b6c4;"></p>
                 </div>
                 <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
@@ -355,9 +355,9 @@
     </button>
 
     <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-400">
-        <span>© 订货与补货管理系统</span>
+        <span>© 订货与补货</span>
         <span class="mx-2">•</span>
-        <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
+        <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员</button>
     </footer>
 
     <!-- 引入 Firebase Web SDK -->
@@ -650,7 +650,7 @@
             let total = 0;
 
             if (Object.keys(cart).length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400">购物车空空如也</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-slate-400">空空如也</div>`;
                 document.getElementById('cart-modal-total').innerText = '¥0.00';
                 return;
             }
