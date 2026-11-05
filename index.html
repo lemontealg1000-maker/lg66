@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <!-- 用户明细查看弹窗 (Admin 点击名字触发，支持单项缺货移除) -->
+    <!-- 用户明细查看弹窗 (Admin 点击名字触发，支持调整数量与单项缺货移除) -->
     <div id="user-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-3">
@@ -733,7 +733,7 @@
                     fullName: option ? `${p.name} (${option})` : p.name,
                     price: p.price, 
                     count: cart[cartKey],
-                    canceled: false // 标记是否被缺货移除
+                    canceled: false
                 };
             });
 
@@ -759,7 +759,7 @@
             });
         }
 
-        // 渲染“我的订单”（如果单品被移除，标注 [❌ 已缺货取消]）
+        // 渲染“我的订单”
         function renderMyOrders() {
             const container = document.getElementById('my-orders-list');
             container.innerHTML = '';
@@ -776,8 +776,8 @@
                 card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden";
                 
                 const itemsHtml = o.items.map(i => {
-                    if (i.canceled) {
-                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × ${i.count} <strong class="text-red-500 font-normal no-underline ml-1">[❌ 已缺货取消]</strong></span><span>¥${formatMoney(i.price * i.count)}</span></div>`;
+                    if (i.canceled || i.count <= 0) {
+                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × ${i.count || 0} <strong class="text-red-500 font-normal no-underline ml-1">[❌ 已缺货取消]</strong></span><span>¥${formatMoney(i.price * (i.count || 0))}</span></div>`;
                     }
                     return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × ${i.count}</span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
                 }).join('');
@@ -940,7 +940,7 @@
             }
         }
 
-        // 显示用户待补货详情（支持独立单品/商品缺货移除）
+        // 显示用户待补货详情（支持调整数量 `-` `+` 与缺货整项取消）
         function showUserDetail(customerName) {
             window.currentOpenUser = customerName;
             const userOrders = orders.filter(o => o.customer === customerName && o.status !== '已完成');
@@ -954,7 +954,7 @@
                 const userSummaryMap = {};
                 userOrders.forEach(o => {
                     o.items.forEach(i => {
-                        if (!i.canceled) {
+                        if (!i.canceled && i.count > 0) {
                             const key = i.fullName || i.name;
                             userSummaryMap[key] = (userSummaryMap[key] || 0) + i.count;
                         }
@@ -964,7 +964,7 @@
                 let summaryHtml = `<div class="bg-cyan-50 p-3 rounded-xl mb-3 border border-cyan-100"><div class="text-xs font-bold text-cyan-800 mb-1">📦 待补货总量汇总：</div>`;
                 const keys = Object.keys(userSummaryMap);
                 if (keys.length === 0) {
-                    summaryHtml += `<div class="text-xs text-slate-400">所有商品均已被移除</div>`;
+                    summaryHtml += `<div class="text-xs text-slate-400">所有商品均已被移除或取消</div>`;
                 } else {
                     keys.forEach(k => {
                         summaryHtml += `<div class="text-xs text-cyan-950 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} 份</span></div>`;
@@ -974,16 +974,26 @@
 
                 let ordersHtml = userOrders.map(o => {
                     const itemsRows = o.items.map((i, itemIndex) => {
-                        if (i.canceled) {
+                        const itemSubtotal = i.price * (i.count || 0);
+
+                        if (i.canceled || i.count <= 0) {
                             return `<div class="flex justify-between items-center text-xs text-red-400 line-through py-1 border-b border-slate-100">
-                                <span>${i.fullName || i.name} × ${i.count} (已取消)</span>
-                                <span>¥${formatMoney(i.price * i.count)}</span>
+                                <span>${i.fullName || i.name} × ${i.count || 0} (已取消)</span>
+                                <span>¥${formatMoney(itemSubtotal)}</span>
                             </div>`;
                         }
-                        return `<div class="flex justify-between items-center text-xs text-slate-700 py-1 border-b border-slate-100">
-                            <span>${i.fullName || i.name} × ${i.count}</span>
+
+                        return `<div class="flex justify-between items-center text-xs text-slate-700 py-1.5 border-b border-slate-100">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-medium text-slate-800">${i.fullName || i.name}</span>
+                                <div class="flex items-center border rounded bg-white overflow-hidden">
+                                    <button type="button" onclick="adjustOrderItemQty('${o.fbKey}', ${itemIndex}, -1)" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px]">-</button>
+                                    <span class="px-2 text-xs font-bold text-cyan-700">${i.count}</span>
+                                    <button type="button" onclick="adjustOrderItemQty('${o.fbKey}', ${itemIndex}, 1)" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px]">+</button>
+                                </div>
+                            </div>
                             <div class="flex items-center gap-2">
-                                <span class="font-semibold text-slate-600">¥${formatMoney(i.price * i.count)}</span>
+                                <span class="font-semibold text-slate-600">¥${formatMoney(itemSubtotal)}</span>
                                 <button type="button" onclick="cancelSingleItem('${o.fbKey}', ${itemIndex})" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-bold transition">❌ 缺货移除</button>
                             </div>
                         </div>`;
@@ -996,9 +1006,9 @@
                                 <span>${o.time}</span>
                             </div>
                             <div class="space-y-0.5">${itemsRows}</div>
-                            <div class="flex justify-between items-center pt-1">
+                            <div class="flex justify-between items-center pt-1 border-t border-slate-200">
                                 <button type="button" onclick="adminDeleteOrderFromModal('${o.fbKey}')" class="text-[11px] text-red-500 hover:underline">删除整张订单</button>
-                                <span class="text-xs font-bold text-slate-800">实际金额: ¥${formatMoney(o.total)}</span>
+                                <span class="text-xs font-bold text-slate-800">实际金额: <span class="text-sm" style="color: #06b6c4;">¥${formatMoney(o.total)}</span></span>
                             </div>
                         </div>
                     `;
@@ -1015,31 +1025,49 @@
             document.getElementById('user-detail-modal').classList.add('hidden');
         }
 
-        // 仅移除订单中的单项缺货商品
+        // 动态调整订单中某商品的补货数量（如从 5 减少到 4）
+        function adjustOrderItemQty(orderFbKey, itemIndex, delta) {
+            const order = orders.find(o => o.fbKey === orderFbKey);
+            if (!order || !order.items[itemIndex]) return;
+
+            const updatedItems = [...order.items];
+            const currentItem = updatedItems[itemIndex];
+
+            const newCount = (currentItem.count || 0) + delta;
+
+            if (newCount <= 0) {
+                currentItem.count = 0;
+                currentItem.canceled = true; // 减到 0 标记为已取消
+            } else {
+                currentItem.count = newCount;
+                currentItem.canceled = false;
+            }
+
+            // 重新计算订单总金额
+            const newTotal = updatedItems.reduce((sum, item) => {
+                return sum + (item.canceled ? 0 : item.price * (item.count || 0));
+            }, 0);
+
+            // 检查是否所有单品都被取消了
+            const allCanceled = updatedItems.every(item => item.canceled || item.count <= 0);
+
+            if (allCanceled) {
+                db.ref('orders/' + orderFbKey).remove();
+            } else {
+                db.ref('orders/' + orderFbKey).update({
+                    items: updatedItems,
+                    total: newTotal
+                });
+            }
+        }
+
+        // 缺货全额移除某单品
         function cancelSingleItem(orderFbKey, itemIndex) {
             const order = orders.find(o => o.fbKey === orderFbKey);
             if (!order || !order.items[itemIndex]) return;
 
-            if (confirm(`确定要移除商品 [${order.items[itemIndex].fullName || order.items[itemIndex].name}] 吗？`)) {
-                const updatedItems = [...order.items];
-                updatedItems[itemIndex].canceled = true; // 标记为已取消
-
-                // 重新计算订单实际有效总金额
-                const newTotal = updatedItems.reduce((sum, item) => {
-                    return sum + (item.canceled ? 0 : item.price * item.count);
-                }, 0);
-
-                // 检查是否所有单品都被取消了
-                const allCanceled = updatedItems.every(item => item.canceled);
-
-                if (allCanceled) {
-                    db.ref('orders/' + orderFbKey).remove();
-                } else {
-                    db.ref('orders/' + orderFbKey).update({
-                        items: updatedItems,
-                        total: newTotal
-                    });
-                }
+            if (confirm(`确定要全额移除商品 [${order.items[itemIndex].fullName || order.items[itemIndex].name}] 吗？`)) {
+                adjustOrderItemQty(orderFbKey, itemIndex, -order.items[itemIndex].count);
             }
         }
 
@@ -1061,8 +1089,8 @@
             orders.forEach(o => {
                 if (o.status === '已完成') return;
 
-                // 统计有效非取消的项目
-                const validItems = o.items.filter(i => !i.canceled);
+                // 过滤出未取消且数量大于 0 的有效商品
+                const validItems = o.items.filter(i => !i.canceled && i.count > 0);
                 if (validItems.length === 0) return;
 
                 totalOrders += 1;
@@ -1178,7 +1206,7 @@
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
-                const itemDesc = o.items.map(i => i.canceled ? `<span class="line-through text-red-400">${i.fullName || i.name} × ${i.count} (已缺货取消)</span>` : `${i.fullName || i.name} × ${i.count}`).join('、');
+                const itemDesc = o.items.map(i => (i.canceled || i.count <= 0) ? `<span class="line-through text-red-400">${i.fullName || i.name} × ${i.count || 0} (已取消)</span>` : `${i.fullName || i.name} × ${i.count}`).join('、');
                 const div = document.createElement('div');
                 div.className = "p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50";
                 div.innerHTML = `
