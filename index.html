@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <!-- 用户明细查看弹窗 (Admin 点击名字触发，支持调整数量与单项缺货移除) -->
+    <!-- 用户明细查看弹窗 (Admin 点击名字触发，支持数量加减调控) -->
     <div id="user-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-3">
@@ -161,7 +161,7 @@
         <!-- 2. 用户个人订单 -->
         <section id="view-my-orders" class="hidden space-y-6">
             <div class="bg-cyan-50 border border-cyan-200 text-cyan-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
-                <span>🔒 提示：已提交的订单将被锁定不可修改，如需调整请联系 Admin 管理员。若有缺货商品将标红标注。</span>
+                <span>🔒 提示：已提交的订单将被锁定不可修改，若因库存不足管理员调整了数量，将会实时同步显示原数量与调整后数量。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
@@ -725,6 +725,7 @@
                 const pId = parts[0];
                 const option = parts[1] === 'default' ? '' : parts[1];
                 const p = products.find(prod => prod.id == pId);
+                const initialQty = cart[cartKey];
                 return { 
                     id: p.id, 
                     cartKey: cartKey,
@@ -732,8 +733,8 @@
                     option: option,
                     fullName: option ? `${p.name} (${option})` : p.name,
                     price: p.price, 
-                    count: cart[cartKey],
-                    canceled: false
+                    count: initialQty,
+                    originalCount: initialQty // 记录原订购数量
                 };
             });
 
@@ -759,7 +760,7 @@
             });
         }
 
-        // 渲染“我的订单”
+        // 渲染“我的订单”（展示原本多少，现在多少）
         function renderMyOrders() {
             const container = document.getElementById('my-orders-list');
             container.innerHTML = '';
@@ -776,8 +777,12 @@
                 card.className = "bg-white p-5 rounded-2xl border shadow-sm space-y-3 relative overflow-hidden";
                 
                 const itemsHtml = o.items.map(i => {
-                    if (i.canceled || i.count <= 0) {
-                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × ${i.count || 0} <strong class="text-red-500 font-normal no-underline ml-1">[❌ 已缺货取消]</strong></span><span>¥${formatMoney(i.price * (i.count || 0))}</span></div>`;
+                    const orig = i.originalCount !== undefined ? i.originalCount : i.count;
+                    if (i.count <= 0) {
+                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × 0 (原订 ${orig}) <strong class="text-red-500 font-normal no-underline ml-1">[❌ 已缺货取消]</strong></span><span>¥0.00</span></div>`;
+                    }
+                    if (i.count !== orig) {
+                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × <strong class="text-cyan-700">${i.count}</strong> <span class="text-xs text-amber-600 font-medium">(原订 ${orig})</span></span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
                     }
                     return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × ${i.count}</span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
                 }).join('');
@@ -940,7 +945,7 @@
             }
         }
 
-        // 显示用户待补货详情（支持调整数量 `-` `+` 与缺货整项取消）
+        // 显示用户待补货详情（展示原本订了多少，并可通过加减调整）
         function showUserDetail(customerName) {
             window.currentOpenUser = customerName;
             const userOrders = orders.filter(o => o.customer === customerName && o.status !== '已完成');
@@ -954,7 +959,7 @@
                 const userSummaryMap = {};
                 userOrders.forEach(o => {
                     o.items.forEach(i => {
-                        if (!i.canceled && i.count > 0) {
+                        if (i.count > 0) {
                             const key = i.fullName || i.name;
                             userSummaryMap[key] = (userSummaryMap[key] || 0) + i.count;
                         }
@@ -975,27 +980,28 @@
                 let ordersHtml = userOrders.map(o => {
                     const itemsRows = o.items.map((i, itemIndex) => {
                         const itemSubtotal = i.price * (i.count || 0);
+                        const orig = i.originalCount !== undefined ? i.originalCount : i.count;
 
-                        if (i.canceled || i.count <= 0) {
+                        if (i.count <= 0) {
                             return `<div class="flex justify-between items-center text-xs text-red-400 line-through py-1 border-b border-slate-100">
-                                <span>${i.fullName || i.name} × ${i.count || 0} (已取消)</span>
-                                <span>¥${formatMoney(itemSubtotal)}</span>
+                                <span>${i.fullName || i.name} × 0 (原订 ${orig}) (已取消)</span>
+                                <span>¥0.00</span>
                             </div>`;
                         }
+
+                        let origLabel = (i.count !== orig) ? `<span class="text-[10px] text-amber-600 font-medium ml-1">(原订 ${orig})</span>` : '';
 
                         return `<div class="flex justify-between items-center text-xs text-slate-700 py-1.5 border-b border-slate-100">
                             <div class="flex items-center gap-1.5">
                                 <span class="font-medium text-slate-800">${i.fullName || i.name}</span>
-                                <div class="flex items-center border rounded bg-white overflow-hidden">
+                                ${origLabel}
+                                <div class="flex items-center border rounded bg-white overflow-hidden ml-1">
                                     <button type="button" onclick="adjustOrderItemQty('${o.fbKey}', ${itemIndex}, -1)" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px]">-</button>
                                     <span class="px-2 text-xs font-bold text-cyan-700">${i.count}</span>
                                     <button type="button" onclick="adjustOrderItemQty('${o.fbKey}', ${itemIndex}, 1)" class="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px]">+</button>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-slate-600">¥${formatMoney(itemSubtotal)}</span>
-                                <button type="button" onclick="cancelSingleItem('${o.fbKey}', ${itemIndex})" class="text-[10px] bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-bold transition">❌ 缺货移除</button>
-                            </div>
+                            <span class="font-semibold text-slate-600">¥${formatMoney(itemSubtotal)}</span>
                         </div>`;
                     }).join('');
 
@@ -1025,7 +1031,7 @@
             document.getElementById('user-detail-modal').classList.add('hidden');
         }
 
-        // 动态调整订单中某商品的补货数量（如从 5 减少到 4）
+        // 动态调整订单中某商品的补货数量
         function adjustOrderItemQty(orderFbKey, itemIndex, delta) {
             const order = orders.find(o => o.fbKey === orderFbKey);
             if (!order || !order.items[itemIndex]) return;
@@ -1033,41 +1039,31 @@
             const updatedItems = [...order.items];
             const currentItem = updatedItems[itemIndex];
 
-            const newCount = (currentItem.count || 0) + delta;
-
-            if (newCount <= 0) {
-                currentItem.count = 0;
-                currentItem.canceled = true; // 减到 0 标记为已取消
-            } else {
-                currentItem.count = newCount;
-                currentItem.canceled = false;
+            // 确保保存原始订购量
+            if (currentItem.originalCount === undefined) {
+                currentItem.originalCount = currentItem.count;
             }
+
+            const newCount = (currentItem.count || 0) + delta;
+            if (newCount < 0) return;
+
+            currentItem.count = newCount;
 
             // 重新计算订单总金额
             const newTotal = updatedItems.reduce((sum, item) => {
-                return sum + (item.canceled ? 0 : item.price * (item.count || 0));
+                return sum + (item.price * (item.count || 0));
             }, 0);
 
-            // 检查是否所有单品都被取消了
-            const allCanceled = updatedItems.every(item => item.canceled || item.count <= 0);
+            // 检查是否所有单品数量都归零
+            const allZero = updatedItems.every(item => (item.count || 0) <= 0);
 
-            if (allCanceled) {
+            if (allZero) {
                 db.ref('orders/' + orderFbKey).remove();
             } else {
                 db.ref('orders/' + orderFbKey).update({
                     items: updatedItems,
                     total: newTotal
                 });
-            }
-        }
-
-        // 缺货全额移除某单品
-        function cancelSingleItem(orderFbKey, itemIndex) {
-            const order = orders.find(o => o.fbKey === orderFbKey);
-            if (!order || !order.items[itemIndex]) return;
-
-            if (confirm(`确定要全额移除商品 [${order.items[itemIndex].fullName || order.items[itemIndex].name}] 吗？`)) {
-                adjustOrderItemQty(orderFbKey, itemIndex, -order.items[itemIndex].count);
             }
         }
 
@@ -1089,8 +1085,7 @@
             orders.forEach(o => {
                 if (o.status === '已完成') return;
 
-                // 过滤出未取消且数量大于 0 的有效商品
-                const validItems = o.items.filter(i => !i.canceled && i.count > 0);
+                const validItems = o.items.filter(i => i.count > 0);
                 if (validItems.length === 0) return;
 
                 totalOrders += 1;
@@ -1206,7 +1201,13 @@
             const ordersList = document.getElementById('admin-orders-list');
             ordersList.innerHTML = '';
             orders.forEach(o => {
-                const itemDesc = o.items.map(i => (i.canceled || i.count <= 0) ? `<span class="line-through text-red-400">${i.fullName || i.name} × ${i.count || 0} (已取消)</span>` : `${i.fullName || i.name} × ${i.count}`).join('、');
+                const itemDesc = o.items.map(i => {
+                    const orig = i.originalCount !== undefined ? i.originalCount : i.count;
+                    if (i.count <= 0) return `<span class="line-through text-red-400">${i.fullName || i.name} × 0 (已取消)</span>`;
+                    if (i.count !== orig) return `${i.fullName || i.name} × ${i.count} <span class="text-amber-600 text-[10px]">(原订${orig})</span>`;
+                    return `${i.fullName || i.name} × ${i.count}`;
+                }).join('、');
+
                 const div = document.createElement('div');
                 div.className = "p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50";
                 div.innerHTML = `
