@@ -31,31 +31,38 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans pb-24">
 
-    <!-- 0. 刷新页面强制询问姓名 (带提示语与中英文) -->
+    <!-- 0. 刷新页面强制询问姓名 (纯中文，无登录弹窗底部的提示) -->
     <div id="user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-5 text-center relative">
-            <!-- 弹窗内右上角语言切换 -->
-            <button onclick="toggleLang()" class="absolute top-4 right-4 text-xs font-semibold px-2.5 py-1 rounded-lg border bg-slate-50 text-slate-600 hover:bg-slate-100">
-                🌐 <span id="modal-lang-btn-text">English</span>
-            </button>
-
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-5 text-center">
             <div class="inline-block p-4 rounded-full mb-1" style="background-color: #e0fcfd; color: #06b6c4;">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             </div>
             <div>
-                <h2 id="txt-modal-title" class="text-xl font-bold text-slate-800">欢迎进入订货系统</h2>
-                <p id="txt-modal-subtitle" class="text-xs text-slate-500 mt-1">请输入编号数字以开始订货</p>
+                <h2 class="text-xl font-bold text-slate-800">欢迎进入订货系统</h2>
+                <p class="text-xs text-slate-500 mt-1">请输入编号数字以开始订货</p>
             </div>
             <form onsubmit="saveUserInfo(event)" class="space-y-4">
                 <div class="relative flex items-center">
                     <input type="text" id="init-username-input" required value="NO" oninput="formatUserNoInput(this)" placeholder="NO1" class="w-full px-4 py-3 border rounded-xl focus:ring-2 outline-none text-center font-bold text-lg tracking-wider" style="--tw-ring-color: #0cd8eb;">
                 </div>
-                <button type="submit" id="txt-modal-btn" class="w-full text-white font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-100" style="background-color: #06b6c4;">确认并进入</button>
+                <button type="submit" class="w-full text-white font-bold py-3 rounded-xl transition shadow-lg shadow-cyan-100" style="background-color: #06b6c4;">确认并进入</button>
             </form>
-            <!-- 新增提示语 -->
-            <p id="txt-modal-tip" class="text-[11px] text-amber-600 font-medium bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-100">
-                💡 如输入错编号请刷新页面，重新输入
-            </p>
+        </div>
+    </div>
+
+    <!-- 0.1 登录成功后的二次提示弹窗 -->
+    <div id="tip-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 text-center">
+            <div class="inline-block p-3 rounded-full bg-amber-50 text-amber-600 mb-1">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">温馨提示</h3>
+                <p class="text-sm text-amber-600 font-medium mt-2 bg-amber-50 p-3 rounded-xl border border-amber-100 leading-relaxed">
+                    💡 如输入错编号请刷新页面，重新输入
+                </p>
+            </div>
+            <button type="button" onclick="closeTipModal()" class="w-full text-white font-bold py-2.5 rounded-xl text-sm shadow-md transition" style="background-color: #06b6c4;">我知道了，进入系统</button>
         </div>
     </div>
 
@@ -64,14 +71,14 @@
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 max-h-[85vh] overflow-y-auto">
             <div>
                 <h3 id="add-modal-title" class="text-lg font-bold text-slate-800">加入清单</h3>
-                <p id="txt-add-subtitle" class="text-xs text-slate-500 mt-0.5">请选择规格和补货数量</p>
+                <p class="text-xs text-slate-500 mt-0.5">请选择规格和补货数量</p>
             </div>
             <div id="add-modal-options-container" class="space-y-2 hidden">
-                <label id="txt-add-opts" class="block text-xs font-semibold text-slate-500">选择规格/口味</label>
+                <label class="block text-xs font-semibold text-slate-500">选择规格/口味</label>
                 <div id="add-modal-options-list" class="space-y-1"></div>
             </div>
             <div class="space-y-2">
-                <label id="txt-add-qty" class="block text-xs font-semibold text-slate-500">补货数量</label>
+                <label class="block text-xs font-semibold text-slate-500">补货数量</label>
                 <div class="flex items-center justify-center space-x-4 border py-2 rounded-xl bg-slate-50">
                     <button type="button" onclick="changeModalQty(-1)" class="w-10 h-10 rounded-lg bg-white border font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center text-lg">-</button>
                     <span id="add-modal-qty" class="text-xl font-bold text-slate-800 w-12 text-center">1</span>
@@ -79,8 +86,8 @@
                 </div>
             </div>
             <div class="flex gap-2 pt-2">
-                <button type="button" onclick="closeAddModal()" id="txt-btn-cancel" class="w-1/2 border text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-slate-50">取消</button>
-                <button type="button" onclick="confirmAddToCart()" id="txt-btn-confirm" class="w-1/2 text-white font-bold py-2.5 rounded-xl text-sm shadow-md" style="background-color: #06b6c4;">确认放入购物车</button>
+                <button type="button" onclick="closeAddModal()" class="w-1/2 border text-slate-600 font-medium py-2.5 rounded-xl text-sm hover:bg-slate-50">取消</button>
+                <button type="button" onclick="confirmAddToCart()" class="w-1/2 text-white font-bold py-2.5 rounded-xl text-sm shadow-md" style="background-color: #06b6c4;">确认放入购物车</button>
             </div>
         </div>
     </div>
@@ -93,7 +100,7 @@
                 <button onclick="closeUserDetailModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
             </div>
             <div id="user-detail-content" class="max-h-80 overflow-y-auto space-y-3"></div>
-            <button onclick="closeUserDetailModal()" id="txt-close-win" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm transition">关闭窗口</button>
+            <button onclick="closeUserDetailModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl text-sm transition">关闭窗口</button>
         </div>
     </div>
 
@@ -139,24 +146,20 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
                 <div>
-                    <span id="txt-brand-title" class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
+                    <span class="font-bold text-lg text-slate-800 tracking-tight block leading-none">快捷订货系统</span>
                     <span id="current-user-badge" class="text-xs text-slate-500 font-medium">👤 未登录</span>
                 </div>
             </div>
 
             <nav class="flex items-center space-x-1 sm:space-x-2">
-                <!-- 语言切换按钮 -->
-                <button onclick="toggleLang()" class="px-3 py-2 rounded-lg text-xs font-semibold border bg-slate-50 text-slate-700 hover:bg-slate-100 flex items-center gap-1">
-                    🌐 <span id="nav-lang-text">English</span>
-                </button>
                 <button onclick="switchView('shop')" id="nav-shop" class="px-4 py-2 rounded-lg text-sm font-medium transition" style="background-color: #e0fcfd; color: #0891b2;">
-                    🛍️ <span id="txt-nav-shop">开始订货</span>
+                    🛍️ 开始订货
                 </button>
                 <button onclick="switchView('my-orders')" id="nav-my-orders" class="px-4 py-2 rounded-lg text-sm font-medium transition text-slate-600 hover:bg-slate-100">
-                    📋 <span id="txt-nav-orders">我的订单</span>
+                    📋 我的订单
                 </button>
                 <button onclick="switchView('admin')" id="nav-admin" class="hidden px-4 py-2 rounded-lg text-sm font-medium transition text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200">
-                    👑 <span id="txt-nav-admin">管理员控制台</span>
+                    👑 管理员控制台
                 </button>
             </nav>
         </div>
@@ -174,7 +177,7 @@
         <!-- 2. 用户个人订单 -->
         <section id="view-my-orders" class="hidden space-y-6">
             <div class="bg-cyan-50 border border-cyan-200 text-cyan-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
-                <span id="txt-order-tip">🔒 提示：已提交的订单将被锁定不可修改，若因库存不足管理员调整了数量，将会实时同步显示原数量与调整后数量。</span>
+                <span>🔒 提示：已提交的订单将被锁定不可修改，若因库存不足管理员调整了数量，将会实时同步显示原数量与调整后数量。</span>
             </div>
             <div id="my-orders-list" class="space-y-4 max-w-2xl mx-auto"></div>
         </section>
@@ -186,15 +189,15 @@
                     <div class="inline-block p-3 bg-purple-100 rounded-full text-purple-600 mb-2">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                     </div>
-                    <h2 id="txt-adm-login-title" class="text-xl font-bold text-slate-800">管理员身份验证</h2>
+                    <h2 class="text-xl font-bold text-slate-800">管理员身份验证</h2>
                 </div>
                 <form onsubmit="verifyAdmin(event)" class="space-y-4">
                     <div>
-                        <label id="txt-adm-pass-label" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">管理员密码</label>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">管理员密码</label>
                         <input type="password" id="admin-pass-input" placeholder="请输入密码 (默认: admin123)" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
                     </div>
                     <div id="admin-error-msg" class="text-red-500 text-xs hidden">密码错误，请重新输入！</div>
-                    <button type="submit" id="txt-adm-login-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition">进入后台</button>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-xl transition">进入后台</button>
                 </form>
             </div>
         </section>
@@ -203,44 +206,44 @@
         <section id="view-admin" class="hidden space-y-8">
             <div class="flex items-center justify-between border-b pb-4">
                 <div>
-                    <h2 id="txt-adm-console" class="text-2xl font-bold text-slate-800">管理员控制台</h2>
+                    <h2 class="text-2xl font-bold text-slate-800">管理员控制台</h2>
                     <p class="text-xs font-semibold mt-1" style="color: #06b6c4;">⚡ 已开启 Firebase 跨设备零延迟自动同步</p>
                 </div>
-                <button onclick="logoutAdmin()" id="txt-adm-logout" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
+                <button onclick="logoutAdmin()" class="text-xs text-slate-500 hover:text-red-600 underline">退出管理员模式</button>
             </div>
 
             <!-- 统计指标 -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span id="txt-stat-1" class="text-xs font-semibold text-slate-400 uppercase">待处理订单数</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待处理订单数</span>
                     <div id="stat-total-orders" class="text-3xl font-black text-slate-800 mt-1">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span id="txt-stat-2" class="text-xs font-semibold text-slate-400 uppercase">待补货总件数</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待补货总件数</span>
                     <div id="stat-total-items" class="text-3xl font-black mt-1" style="color: #06b6c4;">0</div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border shadow-sm">
-                    <span id="txt-stat-3" class="text-xs font-semibold text-slate-400 uppercase">待处理总金额</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase">待处理总金额</span>
                     <div id="stat-total-amount" class="text-3xl font-black text-purple-600 mt-1">¥0.00</div>
                 </div>
             </div>
 
             <!-- 分类管理模块 -->
             <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
-                <h3 id="txt-cat-mgmt" class="font-bold text-slate-800 flex items-center gap-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
                     <span class="bg-cyan-100 text-cyan-800 p-1.5 rounded-lg text-xs">🏷️</span>
                     商品分类管理 (可添加或移除)
                 </h3>
                 <form onsubmit="addNewCategory(event)" class="flex gap-2 max-w-md">
                     <input type="text" id="new-cat-input" required placeholder="新分类名称 (如: 饮料)" class="flex-1 px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-cyan-500">
-                    <button type="submit" id="txt-btn-addcat" class="text-white font-bold px-4 py-2 rounded-xl text-sm transition shadow" style="background-color: #06b6c4;">添加分类</button>
+                    <button type="submit" class="text-white font-bold px-4 py-2 rounded-xl text-sm transition shadow" style="background-color: #06b6c4;">添加分类</button>
                 </form>
                 <div id="admin-category-tags" class="flex flex-wrap gap-2 pt-2"></div>
             </div>
 
             <!-- 上架新商品表单 -->
             <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
-                <h3 id="txt-prod-add-title" class="font-bold text-slate-800 flex items-center gap-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
                     <span class="bg-purple-100 text-purple-600 p-1.5 rounded-lg text-xs">➕</span>
                     上架新商品
                 </h3>
@@ -250,26 +253,26 @@
                     <input type="number" step="0.01" id="new-prod-price" required placeholder="价格 (元)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
                     <input type="text" id="new-prod-options" placeholder="规格/选项 (用逗号隔开)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 sm:col-span-2">
                     <input type="text" id="new-prod-desc" placeholder="简短描述 (选填)" class="px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                    <button type="submit" id="txt-btn-addprod" class="sm:col-span-2 lg:col-span-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm transition">上架该商品</button>
+                    <button type="submit" class="sm:col-span-2 lg:col-span-3 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 rounded-xl text-sm transition">上架该商品</button>
                 </form>
             </div>
 
             <!-- 按人名合并统计 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 id="txt-user-summary-title" class="font-bold text-slate-800">👤 按人员汇总待补货记录 (仅未完成订单)</h3>
+                    <h3 class="font-bold text-slate-800">👤 按人员汇总待补货记录 (仅未完成订单)</h3>
                     <span class="text-xs text-slate-500">点击人员姓名可展开查看详情</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                             <tr>
-                                <th id="txt-th-user" class="p-3">订货人姓名</th>
-                                <th id="txt-th-count" class="p-3">未完成次数</th>
-                                <th id="txt-th-kinds" class="p-3">待补货种数</th>
-                                <th id="txt-th-totalitems" class="p-3 font-bold" style="color: #0891b2;">待补货总件数</th>
-                                <th id="txt-th-totalmoney" class="p-3 font-bold text-purple-700">待处理总金额</th>
-                                <th id="txt-th-action" class="p-3 text-right">操作</th>
+                                <th class="p-3">订货人姓名</th>
+                                <th class="p-3">未完成次数</th>
+                                <th class="p-3">待补货种数</th>
+                                <th class="p-3 font-bold" style="color: #0891b2;">待补货总件数</th>
+                                <th class="p-3 font-bold text-purple-700">待处理总金额</th>
+                                <th class="p-3 text-right">操作</th>
                             </tr>
                         </thead>
                         <tbody id="admin-user-summary-table" class="divide-y"></tbody>
@@ -280,18 +283,18 @@
             <!-- 商品管理 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 id="txt-prod-mgmt-title" class="font-bold text-slate-800">📦 已上架商品管理</h3>
+                    <h3 class="font-bold text-slate-800">📦 已上架商品管理</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
                             <tr>
-                                <th id="txt-th-pname" class="p-3">商品名称</th>
-                                <th id="txt-th-pcat" class="p-3">分类</th>
-                                <th id="txt-th-pprice" class="p-3">单价</th>
-                                <th id="txt-th-popts" class="p-3">规格选项</th>
-                                <th id="txt-th-pstatus" class="p-3">状态</th>
-                                <th id="txt-th-paction" class="p-3 text-right">操作</th>
+                                <th class="p-3">商品名称</th>
+                                <th class="p-3">分类</th>
+                                <th class="p-3">单价</th>
+                                <th class="p-3">规格选项</th>
+                                <th class="p-3">状态</th>
+                                <th class="p-3 text-right">操作</th>
                             </tr>
                         </thead>
                         <tbody id="admin-product-management-table" class="divide-y"></tbody>
@@ -302,9 +305,9 @@
             <!-- 单项汇总统计 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex items-center justify-between">
-                    <h3 id="txt-summary-table-title" class="font-bold text-slate-800">📊 独立单项/规格 待补货总件数统计</h3>
+                    <h3 class="font-bold text-slate-800">📊 独立单项/规格 待补货总件数统计</h3>
                     <button type="button" onclick="exportSummaryToExcel()" class="text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1" style="background-color: #06b6c4;">
-                        <span>📥</span> <span id="txt-btn-excel">导出为 Excel</span>
+                        <span>📥</span> 导出为 Excel
                     </button>
                 </div>
                 <div class="overflow-x-auto">
@@ -326,7 +329,7 @@
             <!-- 明细订单时间线 -->
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
-                    <h3 id="txt-timeline-title" class="font-bold text-slate-800">📜 全部明细订单时间线</h3>
+                    <h3 class="font-bold text-slate-800">📜 全部明细订单时间线</h3>
                 </div>
                 <div id="admin-orders-list" class="divide-y"></div>
             </div>
@@ -338,8 +341,8 @@
         <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex items-center justify-between border-b pb-3">
                 <div class="flex items-center space-x-2">
-                    <span id="txt-cart-title" class="font-bold text-lg text-slate-800">🛒 已选订货清单</span>
-                    <button onclick="clearCart()" id="txt-cart-clear" class="text-xs text-red-500 hover:underline">清空全部</button>
+                    <span class="font-bold text-lg text-slate-800">🛒 已选订货清单</span>
+                    <button onclick="clearCart()" class="text-xs text-red-500 hover:underline">清空全部</button>
                 </div>
                 <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-slate-600 font-bold text-xl">✕</button>
             </div>
@@ -348,15 +351,15 @@
 
             <div class="border-t pt-4 space-y-3">
                 <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500"><span id="txt-cart-user">订货人</span>: <strong id="cart-modal-user" class="text-slate-800">未输入</strong></span>
+                    <span class="text-slate-500">订货人: <strong id="cart-modal-user" class="text-slate-800">未输入</strong></span>
                     <div>
-                        <span id="txt-cart-subtotal" class="text-xs text-slate-500">合计:</span>
+                        <span class="text-xs text-slate-500">合计:</span>
                         <span id="cart-modal-total" class="text-2xl font-black ml-1" style="color: #06b6c4;">¥0.00</span>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="toggleCartModal(false)" id="txt-cart-back" class="w-1/3 border text-slate-600 font-medium py-3 rounded-xl text-sm">再看看</button>
-                    <button onclick="submitOrder()" id="txt-cart-submit" class="w-2/3 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-cyan-100 transition" style="background-color: #06b6c4;">确认提交订单</button>
+                    <button onclick="toggleCartModal(false)" class="w-1/3 border text-slate-600 font-medium py-3 rounded-xl text-sm">再看看</button>
+                    <button onclick="submitOrder()" class="w-2/3 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-cyan-100 transition" style="background-color: #06b6c4;">确认提交订单</button>
                 </div>
             </div>
         </div>
@@ -368,9 +371,9 @@
     </button>
 
     <footer class="bg-slate-100 border-t py-4 text-center text-xs text-slate-400">
-        <span id="txt-footer-copy">© 订货与补货管理系统</span>
+        <span>© 订货与补货管理系统</span>
         <span class="mx-2">•</span>
-        <button onclick="switchView('admin')" id="txt-footer-admin" class="hover:text-slate-600 underline">管理员入口</button>
+        <button onclick="switchView('admin')" class="hover:text-slate-600 underline">管理员入口</button>
     </footer>
 
     <!-- 引入 Firebase Web SDK -->
@@ -405,234 +408,6 @@
 
         let isAdminLoggedIn = false;
         const ADMIN_PASSWORD = "admin123";
-
-        // 多语言配置
-        let currentLang = 'zh'; // 'zh' 或 'en'
-        const i18n = {
-            zh: {
-                brandTitle: "快捷订货系统",
-                navShop: "开始订货",
-                navOrders: "我的订单",
-                navAdmin: "管理员控制台",
-                allProducts: "全部商品",
-                noDesc: "暂无描述",
-                addCart: "+ 加入清单",
-                modalTitle: "欢迎进入订货系统",
-                modalSub: "请输入编号数字以开始订货",
-                modalBtn: "确认并进入",
-                modalTip: "💡 如输入错编号请刷新页面，重新输入",
-                cartTitle: "已选订货清单",
-                cartClear: "清空全部",
-                cartUser: "订货人",
-                cartSubtotal: "合计:",
-                cartBack: "再看看",
-                cartSubmit: "确认提交订单",
-                emptyCart: "购物车空空如也",
-                emptyOrders: "暂无历史记录",
-                lockedTip: "🔒 提示：已提交的订单将被锁定不可修改，若因库存不足管理员调整了数量，将会实时同步显示原数量与调整后数量。",
-                actualTotal: "实际总计:",
-                submittedNote: "🔒 已提交 (仅Admin可修改)",
-                admLoginTitle: "管理员身份验证",
-                admPassLabel: "管理员密码",
-                admLoginBtn: "进入后台",
-                admConsole: "管理员控制台",
-                admLogout: "退出管理员模式",
-                stat1: "待处理订单数",
-                stat2: "待补货总件数",
-                stat3: "待处理总金额",
-                catMgmt: "商品分类管理 (可添加或移除)",
-                btnAddCat: "添加分类",
-                prodAddTitle: "上架新商品",
-                btnAddProd: "上架该商品",
-                userSummaryTitle: "👤 按人员汇总待补货记录 (仅未完成订单)",
-                thUser: "订货人姓名",
-                thCount: "未完成次数",
-                thKinds: "待补货种数",
-                thTotalItems: "待补货总件数",
-                thTotalMoney: "待处理总金额",
-                thAction: "操作",
-                viewDetailBtn: "查看具体补了什么货",
-                prodMgmtTitle: "📦 已上架商品管理",
-                thPName: "商品名称",
-                thPCat: "分类",
-                thPPrice: "单价",
-                thPOpts: "规格选项",
-                thPStatus: "状态",
-                thPAction: "操作",
-                editBtn: "编辑",
-                offlineBtn: "下架",
-                onlineBtn: "重新上架",
-                delBtn: "彻底删除",
-                summaryTableTitle: "📊 独立单项/规格 待补货总件数统计",
-                btnExcel: "导出为 Excel",
-                timelineTitle: "📜 全部明细订单时间线",
-                footerCopy: "© 订货与补货管理系统",
-                footerAdmin: "管理员入口",
-                closeWin: "关闭窗口",
-                addModalTitle: "加入清单",
-                addModalSub: "请选择规格和补货数量",
-                addOpts: "选择规格/口味",
-                addQty: "补货数量",
-                btnCancel: "取消",
-                btnConfirm: "确认放入购物车",
-                statusProcessing: "处理中",
-                statusDone: "已完成",
-                btnDone: "标记已完成",
-                btnReset: "重置为处理中",
-                deleteOrder: "删除",
-                userPendingTitle: "的待补货详情",
-                userPendingTotal: "📦 待补货总量汇总：",
-                userPendingOrders: "📜 待处理订单：",
-                originalOrder: "原订",
-                canceledTag: "[❌ 已缺货取消]",
-                editProdTitle: "✏️ 编辑商品信息"
-            },
-            en: {
-                brandTitle: "Quick Order System",
-                navShop: "Order Now",
-                navOrders: "My Orders",
-                navAdmin: "Admin Console",
-                allProducts: "All Products",
-                noDesc: "No description",
-                addCart: "+ Add to List",
-                modalTitle: "Welcome to Ordering System",
-                modalSub: "Please enter your number ID to start",
-                modalBtn: "Confirm & Enter",
-                modalTip: "💡 If you entered the wrong ID, please refresh the page and re-enter",
-                cartTitle: "Selected Order List",
-                cartClear: "Clear All",
-                cartUser: "Customer",
-                cartSubtotal: "Total:",
-                cartBack: "Look Around",
-                cartSubmit: "Submit Order",
-                emptyCart: "Cart is empty",
-                emptyOrders: "No history records",
-                lockedTip: "🔒 Note: Submitted orders are locked. If the admin adjusts quantities due to low stock, updates will sync in real-time.",
-                actualTotal: "Actual Total:",
-                submittedNote: "🔒 Submitted (Admin only)",
-                admLoginTitle: "Admin Authentication",
-                admPassLabel: "Admin Password",
-                admLoginBtn: "Login to Console",
-                admConsole: "Admin Dashboard",
-                admLogout: "Logout Admin",
-                stat1: "Pending Orders",
-                stat2: "Total Items Pending",
-                stat3: "Total Amount Pending",
-                catMgmt: "Category Management",
-                btnAddCat: "Add Category",
-                prodAddTitle: "Publish New Product",
-                btnAddProd: "Publish Product",
-                userSummaryTitle: "👤 Pending Restock Summary by User",
-                thUser: "Customer ID",
-                thCount: "Pending Orders",
-                thKinds: "Item Kinds",
-                thTotalItems: "Total Items",
-                thTotalMoney: "Total Amount",
-                thAction: "Action",
-                viewDetailBtn: "View Details",
-                prodMgmtTitle: "📦 Product Management",
-                thPName: "Product Name",
-                thPCat: "Category",
-                thPPrice: "Price",
-                thPOpts: "Options",
-                thPStatus: "Status",
-                thPAction: "Action",
-                editBtn: "Edit",
-                offlineBtn: "Offline",
-                onlineBtn: "Online",
-                delBtn: "Delete",
-                summaryTableTitle: "📊 Independent Item/Option Restock Summary",
-                btnExcel: "Export to Excel",
-                timelineTitle: "📜 All Order Timelines",
-                footerCopy: "© Order & Restock Management System",
-                footerAdmin: "Admin Login",
-                closeWin: "Close Window",
-                addModalTitle: "Add to List",
-                addModalSub: "Select option and quantity",
-                addOpts: "Select Option/Flavor",
-                addQty: "Quantity",
-                btnCancel: "Cancel",
-                btnConfirm: "Confirm",
-                statusProcessing: "Processing",
-                statusDone: "Completed",
-                btnDone: "Mark Done",
-                btnReset: "Reset to Pending",
-                deleteOrder: "Delete",
-                userPendingTitle: "'s Restock Details",
-                userPendingTotal: "📦 Restock Quantity Summary:",
-                userPendingOrders: "📜 Pending Orders:",
-                originalOrder: "Orig",
-                canceledTag: "[❌ Canceled]",
-                editProdTitle: "✏️ Edit Product Info"
-            }
-        };
-
-        function toggleLang() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            updateLanguageUI();
-        }
-
-        function updateLanguageUI() {
-            const t = i18n[currentLang];
-            document.getElementById('nav-lang-text').innerText = currentLang === 'zh' ? 'English' : '中文';
-            document.getElementById('modal-lang-btn-text').innerText = currentLang === 'zh' ? 'English' : '中文';
-            document.getElementById('txt-brand-title').innerText = t.brandTitle;
-            document.getElementById('txt-nav-shop').innerText = t.navShop;
-            document.getElementById('txt-nav-orders').innerText = t.navOrders;
-            document.getElementById('txt-nav-admin').innerText = t.navAdmin;
-            document.getElementById('txt-modal-title').innerText = t.modalTitle;
-            document.getElementById('txt-modal-subtitle').innerText = t.modalSub;
-            document.getElementById('txt-modal-btn').innerText = t.modalBtn;
-            document.getElementById('txt-modal-tip').innerText = t.modalTip;
-            document.getElementById('txt-cart-title').innerText = `🛒 ${t.cartTitle}`;
-            document.getElementById('txt-cart-clear').innerText = t.cartClear;
-            document.getElementById('txt-cart-user').innerText = t.cartUser;
-            document.getElementById('txt-cart-subtotal').innerText = t.cartSubtotal;
-            document.getElementById('txt-cart-back').innerText = t.cartBack;
-            document.getElementById('txt-cart-submit').innerText = t.cartSubmit;
-            document.getElementById('txt-footer-copy').innerText = t.footerCopy;
-            document.getElementById('txt-footer-admin').innerText = t.footerAdmin;
-            document.getElementById('txt-order-tip').innerText = t.lockedTip;
-            document.getElementById('txt-adm-login-title').innerText = t.admLoginTitle;
-            document.getElementById('txt-adm-pass-label').innerText = t.admPassLabel;
-            document.getElementById('txt-adm-login-btn').innerText = t.admLoginBtn;
-            document.getElementById('txt-adm-console').innerText = t.admConsole;
-            document.getElementById('txt-adm-logout').innerText = t.admLogout;
-            document.getElementById('txt-stat-1').innerText = t.stat1;
-            document.getElementById('txt-stat-2').innerText = t.stat2;
-            document.getElementById('txt-stat-3').innerText = t.stat3;
-            document.getElementById('txt-cat-mgmt').innerHTML = `<span class="bg-cyan-100 text-cyan-800 p-1.5 rounded-lg text-xs">🏷️</span> ${t.catMgmt}`;
-            document.getElementById('txt-btn-addcat').innerText = t.btnAddCat;
-            document.getElementById('txt-prod-add-title').innerHTML = `<span class="bg-purple-100 text-purple-600 p-1.5 rounded-lg text-xs">➕</span> ${t.prodAddTitle}`;
-            document.getElementById('txt-btn-addprod').innerText = t.btnAddProd;
-            document.getElementById('txt-user-summary-title').innerText = t.userSummaryTitle;
-            document.getElementById('txt-th-user').innerText = t.thUser;
-            document.getElementById('txt-th-count').innerText = t.thCount;
-            document.getElementById('txt-th-kinds').innerText = t.thKinds;
-            document.getElementById('txt-th-totalitems').innerText = t.thTotalItems;
-            document.getElementById('txt-th-totalmoney').innerText = t.thTotalMoney;
-            document.getElementById('txt-th-action').innerText = t.thAction;
-            document.getElementById('txt-prod-mgmt-title').innerText = t.prodMgmtTitle;
-            document.getElementById('txt-th-pname').innerText = t.thPName;
-            document.getElementById('txt-th-pcat').innerText = t.thPCat;
-            document.getElementById('txt-th-pprice').innerText = t.thPPrice;
-            document.getElementById('txt-th-popts').innerText = t.thPOpts;
-            document.getElementById('txt-th-pstatus').innerText = t.thPStatus;
-            document.getElementById('txt-th-paction').innerText = t.thPAction;
-            document.getElementById('txt-summary-table-title').innerText = t.summaryTableTitle;
-            document.getElementById('txt-btn-excel').innerText = t.btnExcel;
-            document.getElementById('txt-timeline-title').innerText = t.timelineTitle;
-            document.getElementById('txt-close-win').innerText = t.closeWin;
-            document.getElementById('txt-add-subtitle').innerText = t.addModalSub;
-            document.getElementById('txt-add-opts').innerText = t.addOpts;
-            document.getElementById('txt-add-qty').innerText = t.addQty;
-            document.getElementById('txt-btn-cancel').innerText = t.btnCancel;
-            document.getElementById('txt-btn-confirm').innerText = t.btnConfirm;
-
-            renderCategoryBar();
-            renderProducts(currentFilterCategory);
-            if(isAdminLoggedIn) renderAdminDashboard();
-        }
 
         function formatMoney(num) {
             const val = parseFloat(num) || 0;
@@ -681,7 +456,6 @@
                     }
                 }
             });
-            updateLanguageUI();
         };
 
         function formatUserNoInput(input) {
@@ -703,13 +477,19 @@
                 currentUser = inputVal;
                 document.getElementById('user-modal').classList.add('hidden');
                 updateUserBadge();
+                // 弹出登录成功后的温馨提示框
+                document.getElementById('tip-modal').classList.remove('hidden');
             } else {
-                alert(currentLang === 'zh' ? '请输入正确的编号，例如 NO1' : 'Please enter a valid ID, e.g., NO1');
+                alert('请输入正确的编号，例如 NO1');
             }
         }
 
+        function closeTipModal() {
+            document.getElementById('tip-modal').classList.add('hidden');
+        }
+
         function updateUserBadge() {
-            document.getElementById('current-user-badge').innerText = `👤 ${currentLang === 'zh' ? '订货人' : 'User'}: ${currentUser}`;
+            document.getElementById('current-user-badge').innerText = `👤 订货人: ${currentUser}`;
             document.getElementById('cart-modal-user').innerText = currentUser;
         }
 
@@ -747,8 +527,7 @@
 
         function renderCategoryBar() {
             const bar = document.getElementById('category-filter-bar');
-            const t = i18n[currentLang];
-            let html = `<button onclick="filterCategory('all')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium ${currentFilterCategory === 'all' ? 'text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-50'}" ${currentFilterCategory === 'all' ? 'style="background-color: #06b6c4;"' : ''}>${t.allProducts}</button>`;
+            let html = `<button onclick="filterCategory('all')" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium ${currentFilterCategory === 'all' ? 'text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-50'}" ${currentFilterCategory === 'all' ? 'style="background-color: #06b6c4;"' : ''}>全部商品</button>`;
             
             categories.forEach(cat => {
                 const isActive = currentFilterCategory === cat;
@@ -774,13 +553,12 @@
         function renderProducts(category = 'all') {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = '';
-            const t = i18n[currentLang];
             
             const activeProducts = products.filter(p => (p.status || 'active') === 'active');
             const filtered = category === 'all' ? activeProducts : activeProducts.filter(p => p.category === category);
             
             if (filtered.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">${currentLang === 'zh' ? '暂无已上架商品' : 'No available products'}</div>`;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">暂无已上架商品</div>`;
                 return;
             }
 
@@ -799,12 +577,12 @@
                             <h3 class="font-bold text-slate-800 text-lg">${p.name}</h3>
                             <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">${p.category}</span>
                         </div>
-                        <p class="text-slate-500 text-xs mb-2 line-clamp-2">${p.desc || t.noDesc}</p>
+                        <p class="text-slate-500 text-xs mb-2 line-clamp-2">${p.desc || '暂无描述'}</p>
                         ${optionTags}
                     </div>
                     <div class="flex items-center justify-between pt-4 border-t mt-4">
                         <span class="text-lg font-black" style="color: #06b6c4;">¥${formatMoney(p.price)}</span>
-                        <button type="button" onclick="openAddModal(${p.id})" class="text-white px-4 py-1.5 rounded-xl text-sm font-medium transition shadow-sm" style="background-color: #06b6c4;">${t.addCart}</button>
+                        <button type="button" onclick="openAddModal(${p.id})" class="text-white px-4 py-1.5 rounded-xl text-sm font-medium transition shadow-sm" style="background-color: #06b6c4;">+ 加入清单</button>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -818,7 +596,7 @@
             currentAddingProduct = p;
             currentModalQty = 1;
             document.getElementById('add-modal-qty').innerText = currentModalQty;
-            document.getElementById('add-modal-title').innerText = `${i18n[currentLang].addModalTitle} [${p.name}]`;
+            document.getElementById('add-modal-title').innerText = `加入 [${p.name}]`;
 
             const optContainer = document.getElementById('add-modal-options-container');
             const optList = document.getElementById('add-modal-options-list');
@@ -891,10 +669,9 @@
             const container = document.getElementById('cart-modal-items');
             container.innerHTML = '';
             let total = 0;
-            const t = i18n[currentLang];
 
             if (Object.keys(cart).length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400">${t.emptyCart}</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-slate-400">购物车空空如也</div>`;
                 document.getElementById('cart-modal-total').innerText = '¥0.00';
                 return;
             }
@@ -1007,12 +784,11 @@
         function renderMyOrders() {
             const container = document.getElementById('my-orders-list');
             container.innerHTML = '';
-            const t = i18n[currentLang];
 
             const userOrders = orders.filter(o => o.customer === currentUser);
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-12 text-slate-400">${t.emptyOrders} [${currentUser}]</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-slate-400">暂无 [${currentUser}] 的历史记录</div>`;
                 return;
             }
 
@@ -1023,10 +799,10 @@
                 const itemsHtml = o.items.map(i => {
                     const orig = i.originalCount !== undefined ? i.originalCount : i.count;
                     if (i.count <= 0) {
-                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × 0 (${t.originalOrder} ${orig}) <strong class="text-red-500 font-normal no-underline ml-1">${t.canceledTag}</strong></span><span>¥0.00</span></div>`;
+                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed text-red-400 line-through"><span>${i.fullName || i.name} × 0 (原订 ${orig}) <strong class="text-red-500 font-normal no-underline ml-1">[❌ 已缺货取消]</strong></span><span>¥0.00</span></div>`;
                     }
                     if (i.count !== orig) {
-                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × <strong class="text-cyan-700">${i.count}</strong> <span class="text-xs text-amber-600 font-medium">(${t.originalOrder} ${orig})</span></span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
+                        return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × <strong class="text-cyan-700">${i.count}</strong> <span class="text-xs text-amber-600 font-medium">(原订 ${orig})</span></span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
                     }
                     return `<div class="flex justify-between text-sm py-1 border-b border-dashed"><span>${i.fullName || i.name} × ${i.count}</span><span class="text-slate-600">¥${formatMoney(i.price * i.count)}</span></div>`;
                 }).join('');
@@ -1037,12 +813,12 @@
                             <span class="font-bold text-slate-800">${o.id}</span>
                             <span class="text-xs text-slate-400 ml-2">${o.time}</span>
                         </div>
-                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${o.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-cyan-100 text-cyan-800'}">${o.status === '已完成' ? t.statusDone : t.statusProcessing}</span>
+                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${o.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-cyan-100 text-cyan-800'}">${o.status}</span>
                     </div>
                     <div>${itemsHtml}</div>
                     <div class="flex justify-between items-center pt-2">
-                        <span class="text-xs text-slate-400">${t.submittedNote}</span>
-                        <div class="text-sm font-bold text-slate-800">${t.actualTotal} <span class="text-base" style="color: #06b6c4;">¥${formatMoney(o.total)}</span></div>
+                        <span class="text-xs text-slate-400">🔒 已提交 (仅Admin可修改)</span>
+                        <div class="text-sm font-bold text-slate-800">实际总计: <span class="text-base" style="color: #06b6c4;">¥${formatMoney(o.total)}</span></div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -1075,7 +851,7 @@
             const catName = input.value.trim();
             if(!catName) return;
             if(categories.includes(catName)) {
-                alert(currentLang === 'zh' ? '该分类已存在！' : 'Category already exists!');
+                alert('该分类已存在！');
                 return;
             }
             categories.push(catName);
@@ -1086,10 +862,10 @@
 
         function deleteCategory(catName) {
             if(categories.length <= 1) {
-                alert(currentLang === 'zh' ? '至少需要保留一个分类！' : 'At least one category must be kept!');
+                alert('至少需要保留一个分类！');
                 return;
             }
-            if(confirm(currentLang === 'zh' ? `确定要删除分类 [${catName}] 吗？` : `Are you sure to delete category [${catName}]?`)) {
+            if(confirm(`确定要删除分类 [${catName}] 吗？`)) {
                 categories = categories.filter(c => c !== catName);
                 db.ref('categories').set(categories).then(() => {
                     if(currentFilterCategory === catName) currentFilterCategory = 'all';
@@ -1184,7 +960,7 @@
         }
 
         function deleteProductPermanently(fbKey) {
-            if (confirm(currentLang === 'zh' ? '确定要彻底删除该商品吗？' : 'Are you sure to delete this product?')) {
+            if (confirm('确定要彻底删除该商品吗？')) {
                 db.ref('products/' + fbKey).remove();
             }
         }
@@ -1192,13 +968,12 @@
         function showUserDetail(customerName) {
             window.currentOpenUser = customerName;
             const userOrders = orders.filter(o => o.customer === customerName && o.status !== '已完成');
-            const t = i18n[currentLang];
-            document.getElementById('user-detail-title').innerText = `👤 ${customerName} ${t.userPendingTitle}`;
+            document.getElementById('user-detail-title').innerText = `👤 ${customerName} 的待补货详情`;
             const container = document.getElementById('user-detail-content');
             container.innerHTML = '';
 
             if (userOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-slate-400">${currentLang === 'zh' ? '该用户目前暂无待补货记录' : 'No pending orders for this user'}</div>`;
+                container.innerHTML = `<div class="text-center py-4 text-slate-400">该用户目前暂无待补货记录</div>`;
             } else {
                 const userSummaryMap = {};
                 userOrders.forEach(o => {
@@ -1210,13 +985,13 @@
                     });
                 });
 
-                let summaryHtml = `<div class="bg-cyan-50 p-3 rounded-xl mb-3 border border-cyan-100"><div class="text-xs font-bold text-cyan-800 mb-1">${t.userPendingTotal}</div>`;
+                let summaryHtml = `<div class="bg-cyan-50 p-3 rounded-xl mb-3 border border-cyan-100"><div class="text-xs font-bold text-cyan-800 mb-1">📦 待补货总量汇总：</div>`;
                 const keys = Object.keys(userSummaryMap);
                 if (keys.length === 0) {
-                    summaryHtml += `<div class="text-xs text-slate-400">${currentLang === 'zh' ? '所有商品均已被移除或取消' : 'All items canceled'}</div>`;
+                    summaryHtml += `<div class="text-xs text-slate-400">所有商品均已被移除或取消</div>`;
                 } else {
                     keys.forEach(k => {
-                        summaryHtml += `<div class="text-xs text-cyan-950 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} ${currentLang === 'zh' ? '份' : 'pcs'}</span></div>`;
+                        summaryHtml += `<div class="text-xs text-cyan-950 flex justify-between"><span>• ${k}</span><span class="font-bold">${userSummaryMap[k]} 份</span></div>`;
                     });
                 }
                 summaryHtml += `</div>`;
@@ -1228,12 +1003,12 @@
 
                         if (i.count <= 0) {
                             return `<div class="flex justify-between items-center text-xs text-red-400 line-through py-1 border-b border-slate-100">
-                                <span>${i.fullName || i.name} × 0 (${t.originalOrder} ${orig}) (${currentLang === 'zh' ? '已取消' : 'Canceled'})</span>
+                                <span>${i.fullName || i.name} × 0 (原订 ${orig}) (已取消)</span>
                                 <span>¥0.00</span>
                             </div>`;
                         }
 
-                        let origLabel = (i.count !== orig) ? `<span class="text-[10px] text-amber-600 font-medium ml-1">(${t.originalOrder} ${orig})</span>` : '';
+                        let origLabel = (i.count !== orig) ? `<span class="text-[10px] text-amber-600 font-medium ml-1">(原订 ${orig})</span>` : '';
 
                         return `<div class="flex justify-between items-center text-xs text-slate-700 py-1.5 border-b border-slate-100">
                             <div class="flex items-center gap-1.5">
@@ -1252,19 +1027,19 @@
                     return `
                         <div class="border rounded-xl p-3 bg-slate-50 space-y-2">
                             <div class="flex justify-between items-center text-xs text-slate-400">
-                                <span>ID: ${o.id}</span>
+                                <span>单号: ${o.id}</span>
                                 <span>${o.time}</span>
                             </div>
                             <div class="space-y-0.5">${itemsRows}</div>
                             <div class="flex justify-between items-center pt-1 border-t border-slate-200">
-                                <button type="button" onclick="adminDeleteOrderFromModal('${o.fbKey}')" class="text-[11px] text-red-500 hover:underline">${currentLang === 'zh' ? '删除整张订单' : 'Delete Order'}</button>
-                                <span class="text-xs font-bold text-slate-800">${t.actualTotal} <span class="text-sm" style="color: #06b6c4;">¥${formatMoney(o.total)}</span></span>
+                                <button type="button" onclick="adminDeleteOrderFromModal('${o.fbKey}')" class="text-[11px] text-red-500 hover:underline">删除整张订单</button>
+                                <span class="text-xs font-bold text-slate-800">实际金额: <span class="text-sm" style="color: #06b6c4;">¥${formatMoney(o.total)}</span></span>
                             </div>
                         </div>
                     `;
                 }).join('');
 
-                container.innerHTML = summaryHtml + `<div class="text-xs font-bold text-slate-500 mb-1">${t.userPendingOrders}</div>` + ordersHtml;
+                container.innerHTML = summaryHtml + `<div class="text-xs font-bold text-slate-500 mb-1">📜 待处理订单：</div>` + ordersHtml;
             }
 
             document.getElementById('user-detail-modal').classList.remove('hidden');
@@ -1308,7 +1083,7 @@
         }
 
         function adminDeleteOrderFromModal(fbKey) {
-            if (confirm(currentLang === 'zh' ? '确定要直接删除整张订单吗？' : 'Are you sure to delete this order?')) {
+            if (confirm('确定要直接删除整张订单吗？')) {
                 db.ref('orders/' + fbKey).remove();
             }
         }
@@ -1320,7 +1095,6 @@
 
             const userAggregatedMap = {};
             const summaryMap = {};
-            const t = i18n[currentLang];
 
             orders.forEach(o => {
                 if (o.status === '已完成') return;
@@ -1369,7 +1143,7 @@
             userSummaryTableBody.innerHTML = '';
 
             if (Object.keys(userAggregatedMap).length === 0) {
-                userSummaryTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">${currentLang === 'zh' ? '当前没有未完成的待处理订单' : 'No pending orders'}</td></tr>`;
+                userSummaryTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">当前没有未完成的待处理订单</td></tr>`;
             } else {
                 Object.keys(userAggregatedMap).forEach(name => {
                     const data = userAggregatedMap[name];
@@ -1377,13 +1151,13 @@
                     tr.className = "hover:bg-slate-50";
                     tr.innerHTML = `
                         <td class="p-3 font-bold text-slate-800">${name}</td>
-                        <td class="p-3 text-slate-500">${data.orderCount}</td>
-                        <td class="p-3 text-slate-500">${data.itemKinds.size}</td>
-                        <td class="p-3 font-bold" style="color: #06b6c4;">${data.totalItems}</td>
+                        <td class="p-3 text-slate-500">${data.orderCount} 次</td>
+                        <td class="p-3 text-slate-500">${data.itemKinds.size} 种</td>
+                        <td class="p-3 font-bold" style="color: #06b6c4;">${data.totalItems} 份</td>
                         <td class="p-3 font-bold text-purple-700">¥${formatMoney(data.totalSpent)}</td>
                         <td class="p-3 text-right">
                             <button type="button" onclick="showUserDetail('${name}')" class="text-xs bg-cyan-50 text-cyan-800 border border-cyan-200 px-3 py-1 rounded-lg font-medium hover:bg-cyan-100">
-                                ${t.viewDetailBtn}
+                                查看具体补了什么货
                             </button>
                         </td>
                     `;
@@ -1404,15 +1178,15 @@
                     <td class="p-3">${(p.options && p.options.length) ? p.options.join(', ') : '-'}</td>
                     <td class="p-3">
                         <span class="px-2 py-0.5 text-xs font-semibold rounded ${isDis ? 'bg-slate-200 text-slate-600' : 'bg-cyan-100 text-cyan-800'}">
-                            ${isDis ? (currentLang === 'zh' ? '已下架' : 'Offline') : (currentLang === 'zh' ? '销售中' : 'Online')}
+                            ${isDis ? '已下架' : '销售中'}
                         </span>
                     </td>
                     <td class="p-3 text-right space-x-2">
-                        <button type="button" onclick="openEditModal(${p.id})" class="text-xs text-blue-600 hover:underline">${t.editBtn}</button>
+                        <button type="button" onclick="openEditModal(${p.id})" class="text-xs text-blue-600 hover:underline">编辑</button>
                         <button type="button" onclick="toggleProductStatus(${p.id}, '${p.fbKey}')" class="text-xs font-semibold ${isDis ? 'text-cyan-600 hover:underline' : 'text-amber-600 hover:underline'}">
-                            ${isDis ? t.onlineBtn : t.offlineBtn}
+                            ${isDis ? '重新上架' : '下架'}
                         </button>
-                        <button type="button" onclick="deleteProductPermanently('${p.fbKey}')" class="text-xs text-red-500 hover:underline">${t.delBtn}</button>
+                        <button type="button" onclick="deleteProductPermanently('${p.fbKey}')" class="text-xs text-red-500 hover:underline">彻底删除</button>
                     </td>
                 `;
                 prodTableBody.appendChild(tr);
@@ -1422,7 +1196,7 @@
             summaryTableBody.innerHTML = '';
 
             if (Object.keys(summaryMap).length === 0) {
-                summaryTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">${currentLang === 'zh' ? '无待补货数据' : 'No data'}</td></tr>`;
+                summaryTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">无待补货数据</td></tr>`;
             } else {
                 Object.values(summaryMap).forEach(item => {
                     const tr = document.createElement('tr');
@@ -1431,7 +1205,7 @@
                         <td class="p-3 font-medium text-slate-800">${item.fullName}</td>
                         <td class="p-3 text-slate-500">${item.category}</td>
                         <td class="p-3 text-slate-500">¥${formatMoney(item.price)}</td>
-                        <td class="p-3 font-bold" style="color: #06b6c4;">${item.totalCount}</td>
+                        <td class="p-3 font-bold" style="color: #06b6c4;">${item.totalCount} 份</td>
                         <td class="p-3 text-slate-700 font-semibold">¥${formatMoney(item.totalRevenue)}</td>
                     `;
                     summaryTableBody.appendChild(tr);
@@ -1443,8 +1217,8 @@
             orders.forEach(o => {
                 const itemDesc = o.items.map(i => {
                     const orig = i.originalCount !== undefined ? i.originalCount : i.count;
-                    if (i.count <= 0) return `<span class="line-through text-red-400">${i.fullName || i.name} × 0 (${currentLang === 'zh' ? '已取消' : 'Canceled'})</span>`;
-                    if (i.count !== orig) return `${i.fullName || i.name} × ${i.count} <span class="text-amber-600 text-[10px]">(${t.originalOrder}${orig})</span>`;
+                    if (i.count <= 0) return `<span class="line-through text-red-400">${i.fullName || i.name} × 0 (已取消)</span>`;
+                    if (i.count !== orig) return `${i.fullName || i.name} × ${i.count} <span class="text-amber-600 text-[10px]">(原订${orig})</span>`;
                     return `${i.fullName || i.name} × ${i.count}`;
                 }).join('、');
 
@@ -1457,15 +1231,15 @@
                             <span class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">${o.id}</span>
                             <span class="text-xs text-slate-400">${o.time}</span>
                         </div>
-                        <p class="text-xs text-slate-600 mt-1">${currentLang === 'zh' ? '订货明细' : 'Details'}: ${itemDesc}</p>
+                        <p class="text-xs text-slate-600 mt-1">订货明细: ${itemDesc}</p>
                     </div>
                     <div class="flex items-center space-x-3">
                         <span class="font-bold text-slate-800">¥${formatMoney(o.total)}</span>
                         <button type="button" onclick="toggleOrderStatus('${o.fbKey}', '${o.status}')" class="text-xs px-3 py-1.5 rounded-lg border font-medium ${o.status === '已完成' ? 'bg-slate-100 text-slate-600' : 'bg-cyan-50 text-cyan-800 border-cyan-200'}">
-                            ${o.status === '已完成' ? t.btnReset : t.btnDone}
+                            ${o.status === '已完成' ? '重置为处理中' : '标记已完成'}
                         </button>
-                        <button type="button" onclick="adminDeleteOrder('${o.fbKey}')" class="text-xs text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded-lg hover:bg-red-50" title="Delete">
-                            ${t.deleteOrder}
+                        <button type="button" onclick="adminDeleteOrder('${o.fbKey}')" class="text-xs text-red-500 hover:text-red-700 p-1.5 border border-red-200 rounded-lg hover:bg-red-50" title="删除订单">
+                            删除
                         </button>
                     </div>
                 `;
@@ -1479,7 +1253,7 @@
         }
 
         function adminDeleteOrder(fbKey) {
-            if (confirm(currentLang === 'zh' ? '确定要删除此订单吗？' : 'Are you sure to delete this order?')) {
+            if (confirm(`确定要删除此订单吗？`)) {
                 db.ref('orders/' + fbKey).remove();
             }
         }
